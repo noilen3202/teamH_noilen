@@ -1113,12 +1113,30 @@ def issue_certificate():
 # AI分析機能
 # ------------------------------
 
+# Google Cloud Natural Language APIの認証情報を環境変数から読み込む
+# ai_key/borantelia-ca0b9d410b20.json はリポジリから除外されているため、環境変数から読み込む
+if "GOOGLE_APPLICATION_CREDENTIALS_JSON" in os.environ:
+    # 環境変数からJSON文字列を読み込み、一時ファイルとして保存
+    credentials_json = os.environ["GOOGLE_APPLICATION_CREDENTIALS_JSON"]
+    temp_credentials_path = os.path.join(app.root_path, "temp_google_credentials.json")
+    with open(temp_credentials_path, "w") as f:
+        f.write(credentials_json)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_credentials_path
+else:
+    # ローカル開発環境など、環境変数がない場合は既存のファイルパスを使用
+    # ただし、ai_keyディレクトリは.gitignoreで除外されているため、このパスはローカルでのみ有効
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(app.root_path, 'ai_key', 'borantelia-ca0b9d410b20.json')
+
+# Google Cloud Natural Language APIクライアントを初期化
+# 環境変数 GOOGLE_APPLICATION_CREDENTIALS が設定されているため、自動的に認証される
+language_client = language_v1.LanguageServiceClient()
+
 def analyze_recruitment_text(text):
     """Google Cloud Natural Language APIを使用して、テキストの感情分析を行います。"""
     try:
-        client = language_v1.LanguageServiceClient()
+        # ここでは既に初期化済みの language_client を使用
         document = language_v1.Document(content=text, type_=language_v1.Document.Type.PLAIN_TEXT, language='ja')
-        sentiment = client.analyze_sentiment(request={'document': document}).document_sentiment
+        sentiment = language_client.analyze_sentiment(request={'document': document}).document_sentiment
         return {'sentiment_score': sentiment.score, 'sentiment_magnitude': sentiment.magnitude}
     except Exception as e:
         print(f"Natural Language API Error: {e}")
