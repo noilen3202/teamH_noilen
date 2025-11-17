@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザーログイン - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-blue-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold"><i class="fas fa-hands-helping mr-2"></i>地域支援 Hub</h1>
+            <nav class="hidden md:flex items-center space-x-4">
+                <a href="../hp/index.html" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">ホーム</a>
+                <a href="./recruitmentlist.html" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">募集一覧</a>
+                <a href="/" class="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-md text-sm font-medium">ログイン</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow container mx-auto flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            <div class="bg-white shadow-2xl rounded-2xl p-8 md:p-12">
+                <div class="text-center mb-8">
+                    <i class="fas fa-user-circle text-5xl text-blue-800 mb-4"></i>
+                    <h2 class="text-3xl font-extrabold text-gray-900">ユーザーログイン</h2>
+                    <p class="text-gray-500 mt-2">ボランティア活動に参加しましょう</p>
+                </div>
+                
+                <div id="message" class="hidden text-center p-4 mb-4 text-sm rounded-lg"></div>
+                
+                <form id="loginForm" action="/user/login_process" method="POST">
+                    <div class="space-y-6">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700">メールアドレス</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-envelope text-gray-400"></i></div>
+                                <input type="email" id="email" name="email" required class="appearance-none block w-full px-3 py-3 pl-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="your@email.com">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700">パスワード</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400"></i></div>
+                                <input type="password" id="password" name="password" required class="appearance-none block w-full px-3 py-3 pl-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="パスワード">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8">
+                        <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-lg font-bold text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-700 transition duration-300">ログイン</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>&copy; 2025 地域支援 Hub. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const messageDiv = document.getElementById('message');
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: new URLSearchParams(formData)
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageDiv.textContent = result.message;
+                    messageDiv.classList.remove('hidden', 'bg-red-100', 'text-red-700');
+                    messageDiv.classList.add('bg-green-100', 'text-green-700');
+                    messageDiv.classList.remove('hidden');
+                    
+                    // Redirect to recruitmentlist.html after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/user/recruitmentlist';
+                    }, 2000);
+                } else {
+                    messageDiv.textContent = result.message || 'ログインに失敗しました。';
+                    messageDiv.classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                    messageDiv.classList.add('bg-red-100', 'text-red-700');
+                    messageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                messageDiv.textContent = 'エラーが発生しました。';
+                messageDiv.classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                messageDiv.classList.add('bg-red-100', 'text-red-700');
+                messageDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+
+</body>
+</html>

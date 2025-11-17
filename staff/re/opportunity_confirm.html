@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>募集確認 - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .confirm-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .data-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.75rem 0;
+            gap: 1rem;
+        }
+        .data-label {
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .data-value {
+            color: #1f2937;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="max-w-7xl mx-auto">
+            <h1 class="text-2xl font-bold">新規募集案件の確認</h1>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto my-8 px-4">
+        <div class="confirm-card">
+            <h2 class="text-3xl font-semibold text-gray-800 mb-6 border-b pb-3">登録内容最終確認</h2>
+
+            <div class="grid grid-cols-1 gap-6 mb-8">
+                
+                <!-- 基本情報 -->
+                <div class="border rounded-lg p-4 bg-indigo-50/50">
+                    <h3 class="text-xl font-bold text-indigo-700 mb-3 border-b border-indigo-200 pb-2">基本情報</h3>
+                    <div class="data-row">
+                        <div class="data-label">案件タイトル</div>
+                        <div id="disp-title" class="data-value"></div>
+                    </div>
+                    <div class="data-row">
+                        <div class="data-label">公開ステータス</div>
+                        <div id="disp-status" class="data-value font-bold"></div>
+                    </div>
+                    <div class="data-row">
+                        <div class="data-label">募集カテゴリー</div>
+                        <div id="disp-categories" class="data-value"></div>
+                    </div>
+                </div>
+
+                <!-- 日程情報 -->
+                <div class="border rounded-lg p-4">
+                    <h3 class="text-xl font-bold text-gray-700 mb-3 border-b pb-2">日程・期間</h3>
+                    <div class="data-row">
+                        <div class="data-label">活動開始日</div>
+                        <div id="disp-activity_date" class="data-value"></div>
+                    </div>
+                    <div class="data-row">
+                        <div class="data-label">募集締切日</div>
+                        <div id="disp-deadline" class="data-value text-red-600 font-semibold"></div>
+                    </div>
+                </div>
+                
+                <!-- 詳細・条件情報 (DBスキーマ変更により未使用だが確認画面に残す) -->
+                <div class="border rounded-lg p-4 bg-gray-50">
+                    <h3 class="text-xl font-bold text-gray-700 mb-3 border-b pb-2">その他（参考情報）</h3>
+                    <div class="data-row">
+                        <div class="data-label">活動場所</div>
+                        <div id="disp-location" class="data-value italic text-gray-500">（DBスキーマから削除されました）</div>
+                    </div>
+                    <div class="data-row">
+                        <div class="data-label">募集人数</div>
+                        <div id="disp-required_count" class="data-value italic text-gray-500">（DBスキーマから削除されました）</div>
+                    </div>
+                    <div class="data-row">
+                        <div class="data-label">必須スキル</div>
+                        <div id="disp-required_skills" class="data-value italic text-gray-500">（DBスキーマから削除されました）</div>
+                    </div>
+                    <div class="data-row">
+                        <div class="data-label">活動時間</div>
+                        <div id="disp-time_frame" class="data-value italic text-gray-500">（DBスキーマから削除されました）</div>
+                    </div>
+                </div>
+
+                <!-- 詳細・問い合わせ情報 -->
+                <div class="border rounded-lg p-4">
+                    <h3 class="text-xl font-bold text-gray-700 mb-3 border-b pb-2">詳細・連絡先</h3>
+                    <div class="data-row">
+                        <div class="data-label">問い合わせメール</div>
+                        <div id="disp-email" class="data-value"></div>
+                    </div>
+                    <div class="data-row">
+                        <div class="data-label">問い合わせ電話</div>
+                        <div id="disp-phone_number" class="data-value"></div>
+                    </div>
+                    <div class="data-row">
+                        <div class="data-label">担当者情報</div>
+                        <div id="disp-staff_info" class="data-value"></div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-dashed">
+                        <div class="data-label mb-2">募集詳細</div>
+                        <p id="disp-description" class="data-value p-3 border rounded bg-gray-50 whitespace-pre-wrap"></p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex justify-between pt-6 border-t mt-4">
+                <button id="back-to-edit" type="button" class="px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition duration-150">
+                    <i class="fas fa-arrow-left mr-2"></i>修正する
+                </button>
+                <button id="submit-registration" type="button" class="px-8 py-3 bg-green-600 text-white font-bold rounded-lg shadow-xl hover:bg-green-700 transition duration-150 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50">
+                    <i class="fas fa-check-circle mr-2"></i>この内容で登録する
+                </button>
+            </div>
+            
+            <!-- スピナー/ローディングメッセージ -->
+            <div id="loading-message" class="hidden mt-4 text-center text-indigo-600 font-semibold">
+                <i class="fas fa-spinner fa-spin mr-2"></i> 登録処理中...
+            </div>
+            
+        </div>
+    </main>
+
+    <script>
+        let opportunityData = {};
+        const API_BASE_URL = '/staff/api/opportunities';
+        
+        // カテゴリーIDを名前に変換するためのマッピングを格納するグローバル変数
+        let categoryMap = {};
+
+        // Helper: カテゴリー名を取得するAPI
+        async function fetchCategories() {
+            try {
+                // 編集画面のGET APIを流用して全カテゴリーを取得
+                const response = await fetch('/staff/api/opportunities/0'); // 0は案件IDがないことを示すダミー
+                const data = await response.json();
+                
+                if (data.all_categories) {
+                    data.all_categories.forEach(cat => {
+                        categoryMap[cat.category_id] = cat.category_name;
+                    });
+                }
+            } catch (e) {
+                console.error('カテゴリーリストの取得に失敗しました:', e);
+            }
+        }
+        
+        // Helper: カテゴリーIDのリストを名前に変換する
+        function formatCategories(categoryIds) {
+            if (!categoryIds || categoryIds.length === 0) return '指定なし';
+            
+            const names = categoryIds.map(id => categoryMap[id] || `ID:${id}`);
+            return names.join('、 ');
+        }
+        
+        // データの表示とカテゴリーのロード
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. カテゴリーマップをロード
+            await fetchCategories();
+            
+            try {
+                const dataString = sessionStorage.getItem('tempOpportunityData');
+                if (!dataString) {
+                    alert('入力データが見つかりません。作成画面に戻ります。');
+                    window.location.href = '/staff/recruitment/new';
+                    return;
+                }
+                opportunityData = JSON.parse(dataString);
+
+                // 2. データをHTMLに表示
+                document.getElementById('disp-title').textContent = opportunityData.title || '未入力';
+                document.getElementById('disp-activity_date').textContent = opportunityData.activity_date || '未入力';
+                document.getElementById('disp-deadline').textContent = opportunityData.deadline || '未入力';
+                document.getElementById('disp-required_skills').textContent = opportunityData.required_skills || '特になし';
+                document.getElementById('disp-staff_info').textContent = opportunityData.staff_info || '担当者不明';
+                document.getElementById('disp-description').textContent = opportunityData.description || '詳細未入力';
+                document.getElementById('disp-email').textContent = opportunityData.email || '未入力';
+                document.getElementById('disp-phone_number').textContent = opportunityData.phone_number || '未入力';
+                document.getElementById('disp-location').textContent = opportunityData.location || '未指定';
+                document.getElementById('disp-required_count').textContent = opportunityData.required_count || 1;
+                document.getElementById('disp-time_frame').textContent = opportunityData.time_frame || '未指定';
+
+                // ステータス表示
+                const statusText = opportunityData.status === 'published' 
+                    ? '公開（即時反映されます）' 
+                    : '下書き（非公開）';
+                document.getElementById('disp-status').textContent = statusText;
+                
+                // カテゴリー表示
+                document.getElementById('disp-categories').textContent = formatCategories(opportunityData.categories);
+
+            } catch (e) {
+                console.error('データの読み込み中にエラーが発生しました:', e);
+                alert('入力データの読み込み中にエラーが発生しました。作成画面に戻ります。');
+                window.location.href = '/staff/recruitment/new';
+            }
+        });
+
+        // 修正ボタン
+        document.getElementById('back-to-edit').addEventListener('click', function() {
+            // SessionStorageのデータは残したまま、作成画面へ戻る
+            window.location.href = '/staff/recruitment/new';
+        });
+
+        // 登録実行ボタン
+        document.getElementById('submit-registration').addEventListener('click', async function() {
+            if (Object.keys(opportunityData).length === 0) {
+                alert('登録するデータがありません。');
+                return;
+            }
+
+            // ローディング表示
+            document.getElementById('submit-registration').classList.add('hidden');
+            document.getElementById('back-to-edit').classList.add('hidden');
+            document.getElementById('loading-message').classList.remove('hidden');
+
+            try {
+                // サーバーAPIを呼び出し、新規案件を登録
+                const response = await fetch(API_BASE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(opportunityData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.id) {
+                    // 成功
+                    sessionStorage.removeItem('tempOpportunityData');
+                    
+                    // 完了画面へ遷移 (案件タイトルとIDをURLパラメータで渡す)
+                    const params = new URLSearchParams({
+                        title: result.title,
+                        id: result.id,
+                        status: opportunityData.status
+                    });
+                    window.location.href = '/staff/recruitment/complete?' + params.toString();
+                    
+                } else {
+                    // 失敗
+                    alert(`案件登録に失敗しました: ${result.error || '不明なエラー'}`);
+                    console.error('API登録エラー:', result);
+                    
+                    // エラー発生時はボタンを元に戻す
+                    document.getElementById('submit-registration').classList.remove('hidden');
+                    document.getElementById('back-to-edit').classList.remove('hidden');
+                    document.getElementById('loading-message').classList.add('hidden');
+                }
+            } catch (error) {
+                alert('案件登録中に予期せぬエラーが発生しました。ネットワークまたはサーバーを確認してください。');
+                console.error('ネットワークエラー:', error);
+                
+                // エラー発生時はボタンを元に戻す
+                document.getElementById('submit-registration').classList.remove('hidden');
+                document.getElementById('back-to-edit').classList.remove('hidden');
+                document.getElementById('loading-message').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

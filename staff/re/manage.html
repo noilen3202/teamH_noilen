@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理メニュー - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+        }
+        .menu-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border-left: 5px solid transparent;
+        }
+        .menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.1);
+            border-left-color: var(--card-hover-color);
+        }
+        .menu-card:hover {
+            /* 🚀 このコードが上に動かす役割を果たしています 🚀 */
+            transform: translateY(-4px); 
+            box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.2); 
+            border-left-color: var(--card-hover-color);
+        }
+        
+        .menu-icon {
+            transition: all 0.3s ease;
+        }
+        .content-section {
+            padding: 2rem 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <h1 class="text-2xl font-bold">ユーザー管理メニュー</h1>
+        
+        <div class="text-sm flex justify-end">
+            <a href="/staff/menu"" class="text-white hover:text-indigo-200">
+                <i class="fas fa-arrow-left mr-1"></i>
+                メニューへ戻る
+            </a>
+        </div>
+    </div>
+</header>
+
+    <main class="content-section max-w-7xl mx-auto">
+        <div class="mb-8">
+            <h2 class="text-3xl font-semibold text-gray-800 mb-2">ユーザー管理</h2>
+            <p class="text-gray-600">ユーザーアカウントとアクセス権限に関する設定を行います。</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+    <a href="/staff/re/user_list" class="menu-card p-6 flex flex-col justify-between" style="--card-hover-color: #10b981;">
+        <div>
+            <i class="fas fa-users text-4xl mb-4 menu-icon" style="color: #059669; --icon-color: #059669;"></i>
+            <h3 class="text-xl font-bold text-gray-800 mb-1">ユーザーの一覧・編集</h3>
+            <p class="text-gray-500 text-sm">既存のユーザー情報を検索・編集します。</p>
+        </div>
+        <div class="mt-4 text-green-600 font-medium text-right">
+            <i class="fas fa-arrow-right"></i>
+        </div>
+    </a>
+
+    <a href="/staff/re/user_invite" class="menu-card p-6 flex flex-col justify-between" style="--card-hover-color: #f59e0b;">
+        <div>
+            <i class="fas fa-user-plus text-4xl mb-4 menu-icon" style="color: #d97706; --icon-color: #d97706;"></i>
+            <h3 class="text-xl font-bold text-gray-800 mb-1">新規ユーザー招待</h3>
+            <p class="text-gray-500 text-sm">新しいユーザーをシステムに招待します。</p>
+        </div>
+        <div class="mt-4 text-yellow-600 font-medium text-right">
+            <i class="fas fa-arrow-right"></i>
+        </div>
+    </a>
+
+</div>
+    </main>
+    
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>応募者一覧（職員用） - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .applicant-table th, .applicant-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .applicant-table th {
+            background-color: #e5e7eb;
+            font-weight: 600;
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">地域支援 Hub - 職員ポータル</h1>
+            <nav>
+    <a href="/staff/recruitment/list" class="text-white hover:text-blue-200 transition">募集案件一覧へ戻る</a>
+</nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-extrabold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-users mr-3 text-blue-600"></i>
+            応募者一覧: <span id="recruitmentTitle" class="ml-2 text-blue-700"></span>
+        </h2>
+        
+        <input type="hidden" id="recruitmentId" value="{{ recruitment_id }}">
+
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200 applicant-table">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">応募ID</th>
+                        <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">氏名</th>
+                        <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">メールアドレス</th>
+                        <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</th>
+                        <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="applicantListBody" class="bg-white divide-y divide-gray-200">
+                    <tr><td colspan="5" class="text-center p-4 text-gray-500">データを読み込み中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const recruitmentId = document.getElementById('recruitmentId').value;
+            if (recruitmentId) {
+                fetchApplicants(recruitmentId);
+            } else {
+                document.getElementById('applicantListBody').innerHTML = '<tr><td colspan="5" class="text-center p-4 text-red-600">案件IDが指定されていません。</td></tr>';
+            }
+        });
+
+        /**
+         * 応募ステータスに応じてバッジを生成する
+         * @param {string} status 応募ステータス ('Pending', 'Approved', 'Rejected')
+         * @returns {string} HTMLバッジ文字列
+         */
+        function getStatusBadge(status) {
+            let color = 'bg-gray-400';
+            let text = '確認待ち';
+            if (status === 'Approved') {
+                color = 'bg-green-500';
+                text = '承認済み';
+            } else if (status === 'Rejected') {
+                color = 'bg-red-500';
+                text = '不承認';
+            }
+
+            return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${color} text-white">${text}</span>`;
+        }
+
+
+        /**
+         * 特定の案件の応募者データをAPIから取得し、テーブルに表示する
+         * @param {string} id 募集案件ID
+         */
+        async function fetchApplicants(id) {
+            const API_ENDPOINT = `/staff/api/applications/by_recruitment/${id}`;
+            const listBody = document.getElementById('applicantListBody');
+
+            try {
+                const response = await fetch(API_ENDPOINT);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(`データの取得に失敗しました: ${response.status} - ${error.error}`);
+                }
+
+                const applicants = await response.json();
+                
+                // タイトル表示（最初の応募データから案件名を取得）
+                if (applicants.length > 0) {
+                    document.getElementById('recruitmentTitle').textContent = applicants[0].recruitment_title;
+                } else {
+                    document.getElementById('recruitmentTitle').textContent = '（案件情報なし）';
+                }
+
+                renderList(applicants);
+
+            } catch (error) {
+                console.error('応募者データの取得エラー:', error);
+                listBody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-600">データの読み込み中にエラーが発生しました。${error.message}</td></tr>`;
+            }
+        }
+
+        /**
+         * 応募者データをテーブルに描画する
+         * @param {Array<Object>} applicants 応募者データの配列
+         */
+        function renderList(applicants) {
+            const listBody = document.getElementById('applicantListBody');
+            listBody.innerHTML = ''; // 一旦クリア
+
+            if (applicants.length === 0) {
+                listBody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">この案件への応募者はまだいません。</td></tr>';
+                return;
+            }
+
+            applicants.forEach(app => {
+                const row = document.createElement('tr');
+                row.innerHTML = '
+                    <td class="px-6 py-4 whitespace-nowrap">' + app.application_id + '</td>
+                    <td class="px-6 py-4 whitespace-nowrap">' + app.applicant_name + '</td>
+                    <td class="px-6 py-4 whitespace-nowrap">' + app.applicant_email + '</td>
+                    <td class="px-6 py-4 whitespace-nowrap">' + getStatusBadge(app.application_status) + '</td>
+                    </td>
+                ';
+                listBody.appendChild(row);
+            });
+        }
+        
+        /**
+         * 応募詳細画面への遷移処理（モック）
+         * @param {number} id 応募ID
+         */
+        function viewDetail(id) {
+             alert(`応募ID: ${id} の詳細画面へ遷移します。`);
+             // 実際の遷移: window.location.href = `/staff/application/details/${id}`;
+        }
+
+    </script>
+</body>
+</html>

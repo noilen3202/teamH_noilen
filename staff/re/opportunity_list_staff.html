@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>募集一覧（職員用） - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .opportunity-table th, .opportunity-table td {
+            padding: 1rem;
+            text-align: left;
+        }
+        .opportunity-table th {
+            background-color: #e5e7eb;
+            color: #1f2937;
+            font-weight: 600;
+        }
+        .opportunity-table tr:nth-child(even) {
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ヘッダー -->
+    <header class="main-header">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-list-alt mr-2"></i>募集案件 管理一覧
+            </h1>
+            <a href="/staff/menu" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm">
+                <i class="fas fa-arrow-left mr-2"></i>メニューへ戻る
+            </a>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-6xl mx-auto p-4 md:p-8">
+
+        <!-- フィルタリングと新規作成ボタン -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
+            <div class="flex space-x-2 w-full sm:w-auto">
+                <select id="statusFilter" class="p-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                    <option value="all">すべてのステータス</option>
+                    <option value="published">公開中</option>
+                    <option value="draft">下書き</option>
+                    <option value="closed">募集終了</option>
+                </select>
+                <button onclick="applyFilter()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg text-sm hover:bg-gray-300 transition duration-200">
+                    <i class="fas fa-filter mr-1"></i> フィルタ
+                </button>
+            </div>
+            <a href="/staff/recruitment/create" class="w-full sm:w-auto bg-green-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-600 transition duration-300 shadow-md text-center">
+                <i class="fas fa-plus mr-2"></i>新規募集を作成
+            </a>
+        </div>
+
+        <!-- 募集一覧テーブル -->
+        <div class="bg-white rounded-xl shadow-lg overflow-x-auto">
+            <table class="opportunity-table w-full">
+                <thead>
+                    <tr>
+                        <th class="w-1/12">ID</th>
+                        <th class="w-4/12">募集タイトル</th>
+                        <th class="w-2/12">活動日</th>
+                        <th class="w-1/12">応募</th>
+                        <th class="w-1/12">ステータス</th>
+                        <th class="w-2/12">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="opportunityList">
+                    <!-- データがここにJavaScriptで挿入されます -->
+                </tbody>
+            </table>
+            
+            <!-- データがない場合のメッセージ -->
+            <div id="noDataMessage" class="hidden text-center p-8 text-gray-500">
+                <i class="fas fa-info-circle mr-2"></i>現在、登録されている募集案件はありません。
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript for data fetching and display -->
+    <script>
+        // APIエンドポイント
+        const API_ENDPOINT = '/staff/api/opportunities/all';
+        
+        // ステータス表示用のバッジを生成
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'published':
+                    return '<span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">公開中</span>';
+                case 'draft':
+                    return '<span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">下書き</span>';
+                case 'closed':
+                    return '<span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">終了</span>';
+                default:
+                    return '';
+            }
+        }
+
+        /**
+         * 募集案件の一覧をHTMLテーブルとして描画する
+         * @param {Array} opportunities - 案件データの配列
+         * @param {string} filterStatus - フィルタリング対象のステータス ('all', 'published', 'draft', 'closed')
+         */
+        function renderList(opportunities, filterStatus) {
+            const listBody = document.getElementById('opportunityList');
+            const noDataMessage = document.getElementById('noDataMessage');
+            listBody.innerHTML = '';
+            
+            // フィルタリング処理
+            const filteredOpportunities = filterStatus === 'all'
+                ? opportunities
+                : opportunities.filter(op => op.status === filterStatus);
+
+            if (filteredOpportunities.length === 0) {
+                noDataMessage.classList.remove('hidden');
+                return;
+            } else {
+                noDataMessage.classList.add('hidden');
+            }
+
+            filteredOpportunities.forEach(op => {
+                // DBからは required_count が取得されないため、ここでは表示を調整
+                // 応募者数のみを表示するように変更
+            const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${op.id}</td>
+                    <td class="font-medium text-gray-900 truncate" style="max-width: 20rem;" title="${op.title}">${op.title}</td>
+                    <td>${op.date}</td>
+                    <td>${op.applied_count} 名</td>
+                    <td>${getStatusBadge(op.status)}</td>
+                    <td class="space-x-2 flex flex-wrap gap-1">
+                        <a href="/staff/recruitment/edit/${op.id}" class="text-xs bg-amber-500 text-white py-1 px-2 rounded-md hover:bg-amber-600 transition">
+                            <i class="fas fa-pencil-alt"></i> 編集
+                        </a>
+                        <button onclick="viewApplicants('${op.id}')" class="text-xs bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600 transition">
+                            <i class="fas fa-users"></i> 応募者 (${op.applied_count})
+                        </button>
+                    </td>
+                `;
+                listBody.appendChild(row);
+            });
+        }
+
+        // --------------------------------------------------------
+        // データ取得とフィルタ適用
+        // --------------------------------------------------------
+
+        let allOpportunities = []; // 取得した全データを保持
+
+        /**
+         * APIからデータを取得し、グローバル変数に保存して描画する
+         */
+        async function fetchOpportunitiesAndRender() {
+            try {
+                // APIからデータを取得
+                const response = await fetch(API_ENDPOINT);
+                
+                if (!response.ok) {
+                    // HTTPエラーレスポンスの場合
+                    const error = await response.json();
+                    throw new Error(`データの取得に失敗しました: ${response.status} - ${error.error}`);
+                }
+
+                allOpportunities = await response.json();
+                
+                // 成功したらフィルタを適用して一覧を描画
+                applyFilter();
+
+            } catch (error) {
+                console.error('データの取得エラー:', error);
+                const listBody = document.getElementById('opportunityList');
+                listBody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-red-600">データの読み込み中にエラーが発生しました。${error.message}</td></tr>`;
+            }
+        }
+
+        /**
+         * 現在選択されているステータスに基づいてフィルタを適用する
+         */
+        function applyFilter() {
+            const filterStatus = document.getElementById('statusFilter').value;
+            renderList(allOpportunities, filterStatus);
+        }
+
+        // 応募者一覧画面への遷移処理（モック）
+        function viewApplicants(id) {
+    // 実際の遷移: 例: /staff/applications/123 の形式で遷移
+          window.location.href = `/staff/applications/${id}`;
+        }
+
+        // 初期ロード時にデータを取得
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchOpportunitiesAndRender();
+        });
+    </script>
+</body>
+</html>

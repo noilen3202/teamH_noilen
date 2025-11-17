@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイページ - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-blue-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-hands-helping mr-2"></i>地域支援 Hub
+            </h1>
+            <nav class="hidden md:flex items-center space-x-4">
+                <a href="/" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">ホーム</a>
+                <a href="/user/recruitmentlist" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">募集一覧</a>
+                <a href="/user/mypage" class="bg-blue-600 px-3 py-2 rounded-md text-sm font-medium">マイページ</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow container mx-auto flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            <div class="bg-white shadow-2xl rounded-2xl p-8 md:p-12 text-center">
+                <i class="fas fa-user-circle text-6xl text-blue-800 mb-4"></i>
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-2">マイページ</h2>
+                <p class="text-gray-600 mb-6">ログイン中のユーザー情報が表示されます。</p>
+                
+                <div class="space-y-4 text-left">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">お名前:</p>
+                        <p id="user-name" class="text-lg font-semibold text-gray-900">読み込み中...</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">メールアドレス:</p>
+                        <p id="user-email" class="text-lg font-semibold text-gray-900">読み込み中...</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 space-y-4">
+                    <a href="/user/activity_history" class="w-full inline-block py-3 px-4 border border-gray-300 rounded-full shadow-sm text-lg font-bold text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        活動履歴
+                    </a>
+                    <button id="logout-button" class="w-full py-3 px-4 border border-transparent rounded-full shadow-sm text-lg font-bold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        ログアウト
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>&copy; 2025 地域支援 Hub. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/current_user')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        window.location.href = '/user/login'; // ログインページへリダイレクト
+                    } else {
+                        document.getElementById('user-name').textContent = data.name;
+                        document.getElementById('user-email').textContent = data.email;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user data:', error);
+                    window.location.href = '/user/login'; // エラー時もログインページへ
+                });
+
+            document.getElementById('logout-button').addEventListener('click', function() {
+                fetch('/user/logout', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.href = '/user/login'; // ログアウト後ログインページへ
+                        } else {
+                            alert('ログアウトに失敗しました。');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Logout error:', error);
+                        alert('ログアウト中にエラーが発生しました。');
+                    });
+            });
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>adminメニュー - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .menu-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border-left: 5px solid transparent;
+        }
+        .menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+            border-left-color: var(--card-hover-color, #3b82f6);
+        }
+        .menu-icon {
+            color: var(--icon-color, #1e3a8a);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-gray-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-desktop mr-3"></i>adminメニュー
+            </h1>
+            <a href="{{ url_for('admin_logout') }}" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-red-600 hover:bg-red-700">
+                <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+            </a>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow max-w-7xl mx-auto p-4 md:p-8">
+        <section class="mb-8">
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-2">運用ダッシュボード</h2>
+            <p class="text-gray-600">現在ログイン中のアカウント: <span id="staff-name" class="font-semibold text-blue-700">管理者</span></p>
+        </section>
+
+        <!-- メニューカードグリッド -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- 0. SuperAdmin アカウント管理 -->
+            <a href="{{ url_for('admin_superadmin_management') }}" class="menu-card p-6 flex flex-col justify-between" style="--card-hover-color: #ef4444;">
+                <div>
+                    <i class="fas fa-user-shield text-4xl mb-4 menu-icon" style="--icon-color: #dc2626;"></i>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">SuperAdmin アカウント管理</h3>
+                    <p class="text-gray-500 text-sm">システム全体の管理者アカウントを管理します。</p>
+                </div>
+                <div class="mt-4 text-red-600 font-medium text-right">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </a>
+
+            <!-- 1. 市町村登録 -->
+            <a href="{{ url_for('admin_org_register') }}" class="menu-card p-6 flex flex-col justify-between" style="--card-hover-color: #10b981;">
+                <div>
+                    <i class="fas fa-landmark text-4xl mb-4 menu-icon" style="--icon-color: #059669;"></i>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">市町村登録</h3>
+                    <p class="text-gray-500 text-sm">新しい市町村をプラットフォームに登録します。</p>
+                </div>
+                <div class="mt-4 text-emerald-600 font-medium text-right">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </a>
+
+            <!-- 2. 市町村管理者アカウント管理 -->
+            <a href="{{ url_for('admin_org_admin_management') }}" class="menu-card p-6 flex flex-col justify-between" style="--card-hover-color: #6366f1;">
+                <div>
+                    <i class="fas fa-users-cog text-4xl mb-4 menu-icon" style="--icon-color: #4f46e5;"></i>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">市町村管理者アカウント管理</h3>
+                    <p class="text-gray-500 text-sm">市町村ごとの管理者アカウントを管理します。</p>
+                </div>
+                <div class="mt-4 text-indigo-600 font-medium text-right">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </a>
+
+            <!-- 3. カテゴリー管理 -->
+            <a href="{{ url_for('admin_category_management') }}" class="menu-card p-6 flex flex-col justify-between" style="--card-hover-color: #f59e0b;">
+                <div>
+                    <i class="fas fa-tags text-4xl mb-4 menu-icon" style="--icon-color: #d97706;"></i>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">カテゴリー管理</h3>
+                    <p class="text-gray-500 text-sm">募集案件のカテゴリーを管理します。</p>
+                </div>
+                <div class="mt-4 text-amber-600 font-medium text-right">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </a>
+
+            <!-- 4. AI分析レポート -->
+            <a href="{{ url_for('admin_analysis') }}" class="menu-card p-6 flex flex-col justify-between" style="--card-hover-color: #3b82f6;">
+                <div>
+                    <i class="fas fa-chart-line text-4xl mb-4 menu-icon" style="--icon-color: #2563eb;"></i>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">AI分析レポート</h3>
+                    <p class="text-gray-500 text-sm">募集の人気傾向をAIで分析します。</p>
+                </div>
+                <div class="mt-4 text-blue-600 font-medium text-right">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </a>
+
+        </section>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>admin専用インターフェース</p>
+    </footer>
+
+</body>
+</html>

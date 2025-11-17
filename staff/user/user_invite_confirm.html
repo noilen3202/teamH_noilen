@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー招待 - 確認 - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .confirm-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .data-row {
+            display: flex;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .data-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            width: 30%;
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .value {
+            width: 70%;
+            color: #1f2937;
+            word-break: break-all;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        .step.active {
+            color: #1e3a8a;
+        }
+        .step.completed {
+            color: #1e3a8a;
+        }
+        .step-circle {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+            background-color: #e5e7eb;
+            color: #1f2937;
+        }
+        .step.completed .step-circle {
+            background-color: #1e3a8a;
+            color: white;
+        }
+        .step.active .step-circle {
+            background-color: #1e3a8a;
+            color: white;
+        }
+        .step-line {
+            height: 2px;
+            width: 3rem;
+            background-color: #e5e7eb;
+            margin: 0 0.5rem;
+        }
+        .step.completed + .step-line {
+            background-color: #1e3a8a;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="max-w-xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">新規ユーザー招待 - 確認</h1>
+            <a href="/staff/re/management" class="text-white hover:text-gray-300 transition duration-200">
+                <i class="fas fa-arrow-left mr-1"></i> 管理メニューへ戻る
+            </a>
+        </div>
+    </header>
+
+    <main class="py-12 px-4">
+        <div class="max-w-xl mx-auto">
+            <div class="step-indicator">
+                <div class="step completed">
+                    <div class="step-circle"><i class="fas fa-check"></i></div>
+                    入力
+                </div>
+                <div class="step-line"></div>
+                <div class="step active">
+                    <div class="step-circle">2</div>
+                    確認
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">3</div>
+                    完了
+                </div>
+            </div>
+
+            <div class="confirm-card p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">以下の内容で登録しますか？</h2>
+                
+                <div class="border border-gray-300 rounded-lg divide-y divide-gray-200">
+                    <div class="data-row px-4">
+                        <div class="label">ユーザー名 (ログインID)</div>
+                        <div class="value" id="confirm_username"></div>
+                    </div>
+                    <div class="data-row px-4">
+                        <div class="label">パスワード</div>
+                        <div class="value">********</div>
+                    </div>
+                    <div class="data-row px-4">
+                        <div class="label">氏名</div>
+                        <div class="value" id="confirm_full_name"></div>
+                    </div>
+                    <div class="data-row px-4">
+                        <div class="label">メールアドレス</div>
+                        <div class="value" id="confirm_email"></div>
+                    </div>
+                    <div class="data-row px-4">
+                        <div class="label">電話番号</div>
+                        <div class="value" id="confirm_phone_number"></div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <button id="registerButton" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-indigo-700 transition duration-300 shadow-md">
+                        <i class="fas fa-user-plus mr-2"></i>上記内容で登録を実行する
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center">
+                <a href="/staff/re/user_invite" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm">
+                    <i class="fas fa-undo mr-1"></i> 戻って修正する
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let inviteData = null;
+
+        // ----------------------------------------
+        // データのロードと表示
+        // ----------------------------------------
+        function loadData() {
+            const dataString = sessionStorage.getItem('tempInviteData');
+            
+            if (!dataString) {
+                alert('入力データが見つかりません。入力画面に戻ります。');
+                // 修正: /user_invite.html -> /staff/re/user_invite
+                window.location.href = '/staff/re/user_invite';
+                return;
+            }
+
+            inviteData = JSON.parse(dataString);
+
+            document.getElementById('confirm_username').textContent = inviteData.username || '未入力';
+            document.getElementById('confirm_full_name').textContent = inviteData.full_name || '未入力';
+            document.getElementById('confirm_email').textContent = inviteData.email || '未入力';
+            document.getElementById('confirm_phone_number').textContent = inviteData.phone_number || '未入力';
+        }
+
+        // ----------------------------------------
+        // 登録処理の実行
+        // ----------------------------------------
+        async function handleRegistration() {
+            if (!inviteData) return;
+
+            const submitBtn = document.getElementById('registerButton');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '登録処理中...';
+
+            try {
+                const response = await fetch('/api/register_volunteer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(inviteData)
+                });
+
+                const data = await response.json();
+
+                // 成功チェック: ステータスコード200-299 かつ JSONの success: true
+                if (response.ok && data.success) {
+                    // 成功: 一時データをクリアし、完了画面へ遷移
+                    sessionStorage.removeItem('tempInviteData');
+                    // 修正: /user_invite_complete.html -> /staff/re/user_invite_complete
+                    window.location.href = '/staff/re/user_invite_complete?username=' + data.username;
+                } else {
+                    // 失敗: サーバーからのエラーメッセージを表示 (409, 500など)
+                    alert('ユーザー登録に失敗しました: ' + (data.message || '不明なエラー'));
+                    
+                    // ボタンを元に戻す
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '上記内容で登録を実行する';
+                }
+            } catch (error) {
+                console.error('API呼び出しエラー:', error);
+                alert('通信エラーが発生しました。サーバーが起動しているか確認してください。');
+                
+                // ボタンを元に戻す
+                submitBtn.disabled = false;
+                submitBtn.textContent = '上記内容で登録を実行する';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            document.getElementById('registerButton').addEventListener('click', handleRegistration);
+        });
+    </script>
+</body>
+</html>
