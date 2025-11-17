@@ -4,7 +4,8 @@
 import os
 from flask import Flask, jsonify, render_template, request, session, redirect, url_for, flash, send_from_directory, send_file
 from flask_bcrypt import Bcrypt
-import mysql.connector
+import psycopg2
+import psycopg2.extras
 from dotenv import load_dotenv
 import pandas as pd
 from google.cloud import language_v1
@@ -50,14 +51,14 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def get_db_connection():
     """データベース接続を取得します。"""
     try:
-        conn = mysql.connector.connect(
+        conn = psycopg2.connect(
             host=os.getenv("DB_HOST"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_DATABASE")
+            dbname=os.getenv("DB_DATABASE") # PostgreSQL uses dbname instead of database
         )
         return conn
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"データベース接続エラー: {err}")
         return None
 
@@ -77,11 +78,11 @@ def opportunity_detail(recruitment_id):
     if conn is None:
         return "データベースに接続できませんでした。", 500
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         cursor.execute("SELECT recruitment_id, title, description, start_date, end_date, contact_phone_number, image_filename FROM Recruitments WHERE recruitment_id = %s", (recruitment_id,))
         opportunity = cursor.fetchone()
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return "データの取得に失敗しました。", 500
     finally:
@@ -120,7 +121,7 @@ def user_login_process():
     
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
         cursor.execute("SELECT volunteer_id, full_name, email, phone_number, password_hash FROM Volunteers WHERE email = %s", (email,))
         user = cursor.fetchone()
@@ -172,7 +173,7 @@ def user_create_account():
 
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         cursor.execute("SELECT volunteer_id FROM Volunteers WHERE email = %s", (email,))
         if cursor.fetchone():
@@ -287,7 +288,7 @@ def admin_login():
             flash("データベースに接続できませんでした。", "error")
             return render_template("admin/login.html")
 
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cursor.execute("SELECT * FROM SuperAdmins WHERE username = %s", (username,))
         user = cursor.fetchone()
         cursor.close()
@@ -346,7 +347,7 @@ def admin_org_register():
             cursor.execute("INSERT INTO Organizations (name, application_date) VALUES (%s, %s)", (org_name, app_date))
             conn.commit()
             flash(f"市町村「{org_name}」を登録しました。", "success")
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
             if err.errno == 1062:
                 flash(f"市町村「{org_name}」は既に登録されています。", "error")
             else:
@@ -371,7 +372,7 @@ def admin_org_admin_management():
         flash("データベースに接続できませんでした。", "error")
         return render_template("admin/org_admin_management.html", admins=[], orgs=[])
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     if request.method == 'POST':
         username = request.form['username']
@@ -388,7 +389,7 @@ def admin_org_admin_management():
                                (org_id, username, pw_hash, role))
                 conn.commit()
                 flash(f"管理者アカウント「{username}」を作成しました。", "success")
-            except mysql.connector.Error as err:
+            except psycopg2.Error as err:
                 if err.errno == 1062:
                     flash(f"ユーザー名「{username}」は既に使用されています。", "error")
                 else:
@@ -429,7 +430,7 @@ def admin_org_admin_delete(username):
         cursor.execute("DELETE FROM AdminUsers WHERE username = %s", (username,))
         conn.commit()
         flash(f"アカウント「{username}」を削除しました。", "success")
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         flash(f"削除中にエラーが発生しました: {err}", "error")
         conn.rollback()
     finally:
@@ -449,7 +450,7 @@ def admin_org_admin_edit(username):
         flash("データベースに接続できませんでした。", "error")
         return redirect(url_for('admin_org_admin_management'))
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     if request.method == 'POST':
         org_id = request.form['org_id']
@@ -494,7 +495,7 @@ def admin_category_management():
         flash("データベースに接続できませんでした。", "error")
         return render_template("admin/category_management.html", categories=[])
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     if request.method == 'POST':
         category_name = request.form.get('category_name')
@@ -505,7 +506,7 @@ def admin_category_management():
                 cursor.execute("INSERT INTO RecruitmentCategories (category_name) VALUES (%s)", (category_name,))
                 conn.commit()
                 flash(f"カテゴリー「{category_name}」を追加しました。", "success")
-            except mysql.connector.Error as err:
+            except psycopg2.Error as err:
                 if err.errno == 1062:
                     flash(f"カテゴリー「{category_name}」は既に存在します。", "error")
                 else:
@@ -539,7 +540,7 @@ def admin_category_delete(category_id):
         cursor.execute("DELETE FROM RecruitmentCategories WHERE category_id = %s", (category_id,))
         conn.commit()
         flash(f"カテゴリーを削除しました。", "success")
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         flash(f"削除中にエラーが発生しました: {err}", "error")
         conn.rollback()
     finally:
@@ -559,7 +560,7 @@ def admin_category_edit(category_id):
         flash("データベースに接続できませんでした。", "error")
         return redirect(url_for('admin_category_management'))
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     if request.method == 'POST':
         category_name = request.form.get('category_name')
@@ -572,7 +573,7 @@ def admin_category_edit(category_id):
             conn.commit()
             flash(f"カテゴリー名を「{category_name}」に更新しました。", "success")
             return redirect(url_for('admin_category_management'))
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
             if err.errno == 1062:
                 flash(f"カテゴリー「{category_name}」は既に存在します。", "error")
             else:
@@ -605,7 +606,7 @@ def admin_superadmin_management():
         flash("データベースに接続できませんでした。", "error")
         return render_template("admin/superadmin_management.html", superadmins=[])
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -622,7 +623,7 @@ def admin_superadmin_management():
                 cursor.execute("INSERT INTO SuperAdmins (username, password_hash) VALUES (%s, %s)", (username, pw_hash))
                 conn.commit()
                 flash(f"SuperAdminアカウント「{username}」を作成しました。", "success")
-            except mysql.connector.Error as err:
+            except psycopg2.Error as err:
                 if err.errno == 1062:
                     flash(f"ユーザー名「{username}」は既に使用されています。", "error")
                 else:
@@ -660,7 +661,7 @@ def admin_superadmin_delete(username):
         cursor.execute("DELETE FROM SuperAdmins WHERE username = %s", (username,))
         conn.commit()
         flash(f"アカウント「{username}」を削除しました。", "success")
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         flash(f"削除中にエラーが発生しました: {err}", "error")
         conn.rollback()
     finally:
@@ -685,7 +686,7 @@ def get_opportunities():
     if conn is None:
         return jsonify({"error": "データベースに接続できませんでした。"}), 500
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         cursor.execute("""
             SELECT 
@@ -698,7 +699,7 @@ def get_opportunities():
             GROUP BY r.recruitment_id
         """)
         opportunities = cursor.fetchall()
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return jsonify({"error": "データの取得に失敗しました。"}), 500
     finally:
@@ -766,11 +767,11 @@ def get_categories():
     if conn is None:
         return jsonify({"error": "データベースに接続できませんでした。"}), 500
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         cursor.execute("SELECT category_id, category_name FROM RecruitmentCategories ORDER BY category_id")
         categories = cursor.fetchall()
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return jsonify({"error": "カテゴリの取得に失敗しました。"}), 500
     finally:
@@ -786,11 +787,11 @@ def get_organizations():
     if conn is None:
         return jsonify({"error": "データベースに接続できませんでした。"}), 500
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         cursor.execute("SELECT name FROM Organizations WHERE is_active = TRUE ORDER BY name")
         organizations = cursor.fetchall()
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return jsonify({"error": "市町村一覧の取得に失敗しました。"}), 500
     finally:
@@ -818,7 +819,7 @@ def get_recruitments_api():
     recruitments = []
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
         params = []
         query = """
@@ -854,7 +855,7 @@ def get_recruitment_detail_json(recruitment_id):
     recruitment = None
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         query = """
             SELECT 
                 r.recruitment_id, r.title, r.description, r.start_date, r.end_date, r.contact_phone_number, r.contact_email,
@@ -889,7 +890,7 @@ def get_my_activities():
     activities = []
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         query = """
             SELECT
                 a.application_id, r.recruitment_id, r.title, r.description, r.start_date, r.end_date,
@@ -946,7 +947,7 @@ def apply_for_recruitment():
 
         return jsonify({'success': True, 'message': '応募が完了しました。'})
 
-    except mysql.connector.IntegrityError:
+    except psycopg2.IntegrityError:
         return jsonify({'success': False, 'message': 'この募集には既に応募済みです。'}), 409
     except Exception as e:
         print(f"Database error during application: {e}")
@@ -968,7 +969,7 @@ def post_inquiry():
 
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         cursor.execute(
             "INSERT INTO Inquiries (recruitment_id, volunteer_id, inquiry_text, inquiry_date) VALUES (%s, %s, %s, %s)",
@@ -1036,7 +1037,7 @@ def issue_certificate():
 
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         query = """
             SELECT
@@ -1149,7 +1150,7 @@ def analyze_popular_factors():
     if conn is None:
         return jsonify({"error": "データベースに接続できませんでした。"}), 500
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         query = """
             SELECT 
@@ -1162,7 +1163,7 @@ def analyze_popular_factors():
         """
         cursor.execute(query)
         db_data = cursor.fetchall()
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return jsonify({"error": "データ取得中にエラーが発生しました。"}), 500
     finally:
@@ -1223,7 +1224,7 @@ def staff_login():
             flash("データベースに接続できませんでした。", "error")
             return render_template("staff/re/staff_login.html")
 
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         # AdminUsersテーブルからユーザーを検索
         cursor.execute("SELECT admin_id, organization_id, username, password_hash, role FROM AdminUsers WHERE username = %s", (username,))
         user = cursor.fetchone()
@@ -1292,14 +1293,14 @@ def staff_menu():
         }
         return render_template("staff/re/staff_menu.html", **context)
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         # Organizationsテーブルから組織名を取得
         cursor.execute("SELECT name FROM Organizations WHERE organization_id = %s", (org_id,))
         org_data = cursor.fetchone()
         if org_data:
             org_name = org_data['name']
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         flash(f"組織情報の取得中にエラーが発生しました: {err}", "error")
     finally:
         cursor.close()
@@ -1349,7 +1350,7 @@ def get_staff_opportunities():
     if conn is None:
         return jsonify({"error": "データベースに接続できませんでした。"}), 500
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
     try:
         # 募集人数に関するカラムの取得を削除済み
@@ -1385,7 +1386,7 @@ def get_staff_opportunities():
             op['deadline'] = op['deadline'].isoformat() if op['deadline'] else ''
 
         
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return jsonify({"error": f"募集案件の取得に失敗しました: {err}"}), 500
     finally:
@@ -1406,7 +1407,7 @@ def staff_user_edit(username):
         flash("データベースに接続できませんでした。", "error")
         return render_template("user_edit_staff.html") 
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     user_to_edit = None
 
     if request.method == 'POST':
@@ -1428,7 +1429,7 @@ def staff_user_edit(username):
             WHERE u.username = %s
         """, (username,))
         user_to_edit = cursor.fetchone()
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         flash(f"ユーザー情報の取得中にエラーが発生しました: {err}", "error")
     finally:
         cursor.close()
@@ -1466,7 +1467,7 @@ def get_staff_opportunity_detail(recruitment_id):
     if conn is None:
         return jsonify({"error": "データベースに接続できませんでした。"}), 500
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
     try:
         # 1. 案件詳細を取得
@@ -1512,7 +1513,7 @@ def get_staff_opportunity_detail(recruitment_id):
         cursor.execute("SELECT category_id, category_name FROM RecruitmentCategories ORDER BY category_id")
         all_categories = cursor.fetchall()
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return jsonify({"error": f"データの取得に失敗しました: {err}"}), 500
     finally:
@@ -1600,7 +1601,7 @@ def staff_api_create_opportunity():
         conn.commit()
         return jsonify({"message": f"新しい案件ID: {new_recruitment_id} が正常に作成されました。", "recruitment_id": new_recruitment_id}), 201
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         conn.rollback() 
         print(f"案件作成クエリエラー: {err}")
         return jsonify({"error": f"案件の作成中にデータベースエラーが発生しました: {err}"}), 500
@@ -1696,7 +1697,7 @@ def staff_api_update_opportunity(recruitment_id):
         conn.commit()
         return jsonify({"message": f"案件ID: {recruitment_id} が正常に更新されました。"}, 200)
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         conn.rollback() 
         print(f"案件更新クエリエラー: {err}")
         return jsonify({"error": f"案件の更新中にデータベースエラーが発生しました: {err}"}), 500
@@ -1744,7 +1745,7 @@ def api_get_staff_users():
         return jsonify({"error": "データベースに接続できません。"}, 500)
 
     try:
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
         # AdminUsers (職員) と Volunteers (ボランティア) の情報を結合するクエリを修正
         query = """
@@ -1787,7 +1788,7 @@ def api_get_staff_users():
         
         return jsonify(users)
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         # エラーメッセージを分かりやすく出力し、フロントエンドに返す
         print(f"ユーザー一覧取得クエリエラー: {err}") 
         return jsonify({"error": f"データベースクエリ実行中にエラーが発生しました: {err}"}), 500
@@ -1823,7 +1824,7 @@ def api_get_single_user(user_id):
         return jsonify({"error": "データベースに接続できません。"}, 500)
 
     try:
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         user_data = None
         
         # 1. 職員アカウント (AdminUsers) から検索
@@ -1902,7 +1903,7 @@ def api_get_single_user(user_id):
         else:
             return jsonify({"error": f"ユーザーID {user_id} は見つかりませんでした。"}, 404)
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"単一ユーザー取得クエリエラー: {err}")
         return jsonify({"error": f"データベースクエリ実行中にエラーが発生しました: {err}"}), 500
     finally:
@@ -1928,7 +1929,7 @@ def api_update_user(user_id):
         return jsonify({"error": "データベースに接続できません。"}, 500)
 
     try:
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         update_success = False
         is_org_staff = data.get('is_org_staff', False)
 
@@ -1985,7 +1986,7 @@ def api_update_user(user_id):
             conn.rollback()
             return jsonify({"success": False, "error": "更新対象のユーザーが見つからないか、データが変更されていません。"}, 404)
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         conn.rollback()
         print(f"ユーザー更新クエリエラー: {err}")
         return jsonify({"success": False, "error": f"データベースエラーが発生しました: {err}"}), 500
@@ -2029,7 +2030,7 @@ def delete_user(user_id):
             conn.rollback()
             return jsonify({"success": False, "message": "削除対象のボランティアユーザーが見つかりませんでした。"}, 404)
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         conn.rollback()
         print(f"ユーザー削除クエリエラー: {err}")
         return jsonify({"success": False, "error": f"データベースエラーが発生しました: {err}"}), 500
@@ -2087,7 +2088,7 @@ def register_volunteer():
         if not all([username, password, full_name, email]):
             return jsonify({"error": "必須フィールドが不足しています。"}, 400)
 
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         # 2. ユーザー名の重複チェック
         # ユーザー名（ログインID）は一意である必要がある
@@ -2124,7 +2125,7 @@ def register_volunteer():
         # 成功レスポンス。完了画面に表示するため氏名を返却。
         return jsonify({"success": True, "username": full_name}), 200
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         conn.rollback() 
         print(f"ボランティア登録クエリエラー: {err}")
         return jsonify({"error": f"データベースエラーが発生しました: {err}"}), 500
@@ -2190,7 +2191,7 @@ def create_staff_account():
 
 
 
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         try:
 
@@ -2224,7 +2225,7 @@ def create_staff_account():
 
         
 
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
 
             conn.rollback()
 
@@ -2276,7 +2277,7 @@ def list_staff_accounts():
 
 
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     try:
 
@@ -2296,7 +2297,7 @@ def list_staff_accounts():
 
         accounts = cursor.fetchall()
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
 
         flash(f"アカウント一覧の取得中にエラーが発生しました: {err}", "error")
 
@@ -2331,7 +2332,7 @@ def staff_applications():
         return render_template("staff/re/applicant_list.html", applications=[], org_name="所属組織不明") 
 
     applications = []
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         # SQLクエリをRecruitments, Volunteersテーブルに合わせて修正
         sql_query = """
@@ -2357,7 +2358,7 @@ def staff_applications():
         cursor.execute(sql_query, (org_id,))
         applications = cursor.fetchall()
         
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         flash(f"応募者情報の取得中にデータベースエラーが発生しました: {err}", "error")
         print(f"SQL Error in staff_applications: {err}")
         # エラーが発生した場合もテンプレートはレンダリングし、エラーメッセージをユーザーに表示する
@@ -2397,7 +2398,7 @@ def staff_application_detail(application_id):
         return render_template("staff/re/application_detail.html", detail={}, org_name=session.get('org_name', '所属組織'), not_found=True)
 
     detail = None
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         # SQLクエリ: 応募、募集、ボランティアの全詳細情報を取得
         # さらに、この応募がログイン中の職員の管轄組織のものであるかも確認する (r.organization_id = %s)
@@ -2425,7 +2426,7 @@ def staff_application_detail(application_id):
             flash("指定された応募情報が見つからないか、管轄外の情報です。", "error")
             return render_template("staff/re/application_detail.html", detail={}, org_name=session.get('org_name', '所属組織'), not_found=True)
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         flash(f"応募詳細の取得中にデータベースエラーが発生しました: {err}", "error")
         print(f"SQL Error in staff_application_detail: {err}")
     finally:
@@ -2464,7 +2465,7 @@ def update_application_status(application_id):
         flash("データベースに接続できませんでした。", "error")
         return redirect(url_for('staff_application_detail', application_id=application_id))
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         # 3. 応募情報と管轄組織のチェック（二重チェック）
         # ステータスを更新する前に、その応募がログイン中の職員の管轄組織の案件であることを確認します。
@@ -2496,7 +2497,7 @@ def update_application_status(application_id):
         status_name = "承認" if new_status == 'Approved' else "不承認"
         flash(f"応募ID: {application_id} のステータスを「{status_name}」に更新しました。", "success")
         
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         conn.rollback()
         flash(f"ステータスの更新中にデータベースエラーが発生しました: {err}", "error")
         print(f"SQL Error in update_application_status: {err}")
@@ -2530,7 +2531,7 @@ def get_applications_by_recruitment(recruitment_id):
     cursor = None
     
     try:
-        cursor = conn.cursor(dictionary=True) 
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor) 
         
         # 💡 修正: VolunteersテーブルをJOINし、氏名とメールアドレスを取得する
         query = """
@@ -2553,7 +2554,7 @@ def get_applications_by_recruitment(recruitment_id):
         return jsonify(applications)
 
     # データベースエラーを捕捉
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"SQL Error in get_applications_by_recruitment: {err}") 
         return jsonify({"error": "データベース操作中にエラーが発生しました。"}), 500
     
