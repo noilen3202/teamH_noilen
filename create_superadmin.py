@@ -4,7 +4,7 @@ import os
 import getpass
 from flask import Flask
 from flask_bcrypt import Bcrypt
-import mysql.connector
+import psycopg2
 from dotenv import load_dotenv
 
 # このスクリプトはFlaskアプリのコンテキスト外で実行されるため、
@@ -18,14 +18,13 @@ load_dotenv()
 def get_db_connection():
     """データベース接続を取得します。"""
     try:
-        conn = mysql.connector.connect(
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_DATABASE")
-        )
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            print("[エラー] 環境変数 DATABASE_URL が設定されていません。")
+            return None
+        conn = psycopg2.connect(database_url)
         return conn
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"[エラー] データベースに接続できませんでした: {err}")
         return None
 
@@ -69,7 +68,7 @@ def main():
         conn.commit()
         print("\n[成功] データベースの更新が完了しました。")
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"\n[エラー] データベース操作中にエラーが発生しました: {err}")
         conn.rollback()
     finally:
