@@ -79,7 +79,7 @@ def opportunity_detail(recruitment_id):
 
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        cursor.execute("SELECT recruitment_id, title, description, start_date, end_date, contact_phone_number, image_filename FROM Recruitments WHERE recruitment_id = %s", (recruitment_id,))
+        cursor.execute("SELECT recruitment_id, title, description, start_date, end_date, contact_phone_number FROM Recruitments WHERE recruitment_id = %s", (recruitment_id,))
         opportunity = cursor.fetchone()
     except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
@@ -769,7 +769,7 @@ def get_categories():
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         cursor.execute("SELECT category_id, category_name FROM RecruitmentCategories ORDER BY category_id")
-        categories = cursor.fetchall()
+        categories = [dict(row) for row in cursor.fetchall()]
     except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return jsonify({"error": "カテゴリの取得に失敗しました。"}), 500
