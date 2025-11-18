@@ -344,7 +344,9 @@ def admin_org_register():
 
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO Organizations (name, application_date) VALUES (%s, %s)", (org_name, app_date))
+            # TODO: Add a prefecture selection to the form instead of hardcoding.
+            prefecture_id = 1 
+            cursor.execute("INSERT INTO Organizations (prefecture_id, name, application_date) VALUES (%s, %s, %s)", (prefecture_id, org_name, app_date))
             conn.commit()
             flash(f"市町村「{org_name}」を登録しました。", "success")
         except psycopg2.Error as err:
@@ -695,8 +697,7 @@ def get_opportunities():
             LEFT JOIN RecruitmentCategoryMap rcm ON r.recruitment_id = rcm.recruitment_id
             LEFT JOIN RecruitmentCategories rc ON rcm.category_id = rc.category_id
             WHERE r.status = 'Open'
-            GROUP BY r.recruitment_id
-        """)
+                        GROUP BY r.recruitment_id, r.title, r.description, r.start_date, r.end_date        """)
         opportunities = cursor.fetchall()
     except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
