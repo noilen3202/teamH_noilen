@@ -701,7 +701,7 @@ def get_opportunities():
         opportunities = cursor.fetchall()
     except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
-        return jsonify({"error": "データの取得に失敗しました。"}), 500
+        return jsonify({"error": f"データの取得に失敗しました: {err}"}), 500
     finally:
         cursor.close()
         conn.close()
@@ -793,7 +793,7 @@ def get_organizations():
         organizations = cursor.fetchall()
     except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
-        return jsonify({"error": "市町村一覧の取得に失敗しました。"}), 500
+        return jsonify({"error": f"市町村一覧の取得に失敗しました: {err}"}), 500
     finally:
         cursor.close()
         conn.close()
