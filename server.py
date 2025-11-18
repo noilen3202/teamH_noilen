@@ -348,11 +348,11 @@ def admin_org_register():
             conn.commit()
             flash(f"市町村「{org_name}」を登録しました。", "success")
         except psycopg2.Error as err:
-            if err.errno == 1062:
+            conn.rollback()
+            if hasattr(err, 'pgcode') and err.pgcode == '23505': # unique_violation
                 flash(f"市町村「{org_name}」は既に登録されています。", "error")
             else:
                 flash(f"登録中にエラーが発生しました: {err}", "error")
-            conn.rollback()
         finally:
             cursor.close()
             conn.close()
@@ -388,13 +388,12 @@ def admin_org_admin_management():
                 cursor.execute("INSERT INTO AdminUsers (organization_id, username, password_hash, role) VALUES (%s, %s, %s, %s)",
                                (org_id, username, pw_hash, role))
                 conn.commit()
-                flash(f"管理者アカウント「{username}」を作成しました。", "success")
             except psycopg2.Error as err:
-                if err.errno == 1062:
+                conn.rollback()
+                if hasattr(err, 'pgcode') and err.pgcode == '23505': # unique_violation
                     flash(f"ユーザー名「{username}」は既に使用されています。", "error")
                 else:
                     flash(f"アカウント作成中にエラーが発生しました: {err}", "error")
-                conn.rollback()
         
         cursor.close()
         conn.close()
@@ -507,11 +506,11 @@ def admin_category_management():
                 conn.commit()
                 flash(f"カテゴリー「{category_name}」を追加しました。", "success")
             except psycopg2.Error as err:
-                if err.errno == 1062:
+                conn.rollback()
+                if hasattr(err, 'pgcode') and err.pgcode == '23505': # unique_violation
                     flash(f"カテゴリー「{category_name}」は既に存在します。", "error")
                 else:
                     flash(f"登録中にエラーが発生しました: {err}", "error")
-                conn.rollback()
         
         cursor.close()
         conn.close()
@@ -574,11 +573,11 @@ def admin_category_edit(category_id):
             flash(f"カテゴリー名を「{category_name}」に更新しました。", "success")
             return redirect(url_for('admin_category_management'))
         except psycopg2.Error as err:
-            if err.errno == 1062:
+            conn.rollback()
+            if hasattr(err, 'pgcode') and err.pgcode == '23505': # unique_violation
                 flash(f"カテゴリー「{category_name}」は既に存在します。", "error")
             else:
                 flash(f"更新中にエラーが発生しました: {err}", "error")
-            conn.rollback()
             return redirect(url_for('admin_category_edit', category_id=category_id))
         finally:
             cursor.close()
@@ -624,11 +623,11 @@ def admin_superadmin_management():
                 conn.commit()
                 flash(f"SuperAdminアカウント「{username}」を作成しました。", "success")
             except psycopg2.Error as err:
-                if err.errno == 1062:
+                conn.rollback()
+                if hasattr(err, 'pgcode') and err.pgcode == '23505': # unique_violation
                     flash(f"ユーザー名「{username}」は既に使用されています。", "error")
                 else:
                     flash(f"アカウント作成中にエラーが発生しました: {err}", "error")
-                conn.rollback()
         
         cursor.close()
         conn.close()
@@ -1575,6 +1574,7 @@ def staff_api_create_opportunity():
                 start_date, end_date, contact_phone_number, contact_email, 
                 status
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING recruitment_id
         """
         cursor.execute(insert_query, (
             org_id,
@@ -1588,7 +1588,7 @@ def staff_api_create_opportunity():
         ))
         
         # 挿入された案件のIDを取得
-        new_recruitment_id = cursor.lastrowid
+        new_recruitment_id = cursor.fetchone()[0]
         
         # 2. カテゴリーの紐付け (RecruitmentCategoryMap)
         selected_categories = data.get('categories', [])
