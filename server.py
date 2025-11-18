@@ -51,12 +51,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def get_db_connection():
     """データベース接続を取得します。"""
     try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            dbname=os.getenv("DB_DATABASE") # PostgreSQL uses dbname instead of database
-        )
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            print("環境変数 DATABASE_URL が設定されていません。")
+            return None
+        conn = psycopg2.connect(database_url)
         return conn
     except psycopg2.Error as err:
         print(f"データベース接続エラー: {err}")
