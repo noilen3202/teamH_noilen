@@ -697,7 +697,7 @@ def get_opportunities():
             LEFT JOIN RecruitmentCategories rc ON rcm.category_id = rc.category_id
             WHERE r.status = 'Open'
                         GROUP BY r.recruitment_id, r.title, r.description, r.start_date, r.end_date        """)
-        opportunities = cursor.fetchall()
+        opportunities = [dict(row) for row in cursor.fetchall()]
     except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return jsonify({"error": f"データの取得に失敗しました: {err}"}), 500
@@ -789,7 +789,7 @@ def get_organizations():
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
         cursor.execute("SELECT name FROM Organizations WHERE is_active = TRUE ORDER BY name")
-        organizations = cursor.fetchall()
+        organizations = [dict(row) for row in cursor.fetchall()]
     except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
         return jsonify({"error": f"市町村一覧の取得に失敗しました: {err}"}), 500
@@ -1368,7 +1368,7 @@ def get_staff_opportunities():
             ORDER BY r.end_date DESC
         """, (org_id,))
         
-        opportunities = cursor.fetchall()
+        opportunities = [dict(row) for row in cursor.fetchall()]
 
         # HTML側のJSで使われる status の値に変換 ('published', 'draft', 'closed')
         # DBの status: 'Draft', 'Open', 'Closed'
