@@ -296,10 +296,11 @@
 
     // ページロード時の初期処理
     document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('id'); 
+        // URLパスからユーザーIDを抽出
+        const pathSegments = window.location.pathname.split('/');
+        const userId = pathSegments[pathSegments.length - 1]; // 例: /staff/re/user_edit/123 -> "123"
         
-        if (userId) {
+        if (userId && !isNaN(userId)) { // userIdが存在し、数値であることを確認
             loadUserData(userId);
         } else {
             // 職員管理画面から遷移する際はID必須

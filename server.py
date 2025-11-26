@@ -17,11 +17,14 @@ import secrets
 from datetime import datetime
 from fpdf import FPDF
 import io
+import threading
 
 # .envファイルから環境変数を読み込む
 load_dotenv()
 
 app = Flask(__name__, static_folder='.', template_folder='.')
+app.config['SERVER_NAME'] = 'teamh-noilen.onrender.com'
+app.config['PREFERRED_URL_SCHEME'] = 'https'
 app.secret_key = os.urandom(24) # セッション管理のための秘密鍵
 bcrypt = Bcrypt(app) # Bcryptの初期化
 
@@ -110,13 +113,15 @@ def toiawase_page():
 @app.route('/user/login')
 def user_login_page():
     """ユーザーログインページを表示"""
-    return render_template('user/userlogin.html')
+    next_url = request.args.get('next', '')
+    return render_template('user/userlogin.html', next_url=next_url)
 
 @app.route('/user/login_process', methods=['POST'])
 def user_login_process():
     """ユーザーのログイン処理"""
     email = request.form.get('email')
     password = request.form.get('password')
+    next_url = request.form.get('next')
     
     try:
         conn = get_db_connection()
@@ -143,7 +148,14 @@ def user_login_process():
                 session['user_name'] = user['full_name']
                 session['user_email'] = user['email']
                 session['user_phone'] = user['phone_number']
-                return jsonify({'success': True, 'message': 'ログインに成功しました。'})
+
+                # 安全なリダイレクト先の決定
+                if next_url and next_url.startswith('/'):
+                    redirect_url = next_url
+                else:
+                    redirect_url = url_for('user_mypage')
+                
+                return jsonify({'success': True, 'message': 'ログインに成功しました。', 'redirect_url': redirect_url})
 
         return jsonify({'success': False, 'message': 'メールアドレスまたはパスワードが正しくありません。'}), 401
             
@@ -182,9 +194,22 @@ def user_create_account():
 
         # パスワードをハッシュ化して保存するのが望ましい
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        
+        # Determine organization_id
+        # If a staff member is logged in, use their organization_id
+        # Otherwise, default to 1 (public registration)
+        org_id_to_assign = 1
+        if check_org_login():
+            staff_org_id = session.get('org_id')
+            if staff_org_id: # Ensure it's not None
+                org_id_to_assign = staff_org_id
+            else:
+                # Log an error if staff is logged in but org_id is missing from session
+                print("Warning: Staff logged in but org_id missing from session. Defaulting to 1.")
+
         cursor.execute(
             "INSERT INTO Volunteers (organization_id, username, password_hash, full_name, email) VALUES (%s, %s, %s, %s, %s)",
-            (1, email, hashed_password, name, email) # organization_idは仮, usernameにemailを仮使用
+            (org_id_to_assign, email, hashed_password, name, email) # Use dynamically determined organization_id
         )
         conn.commit()
         cursor.close()
@@ -811,6 +836,86 @@ def current_user():
         })
     return jsonify({'error': 'Not logged in'}), 401
 
+@app.route('/api/user/update_profile', methods=['POST'])
+def update_user_profile():
+    """ログイン中のユーザーが自身のプロフィール（メール、電話番号、パスワード）を更新する"""
+    if not session.get('logged_in') or not session.get('volunteer_id'):
+        return jsonify({'success': False, 'message': 'ログインが必要です。'}), 401
+
+    volunteer_id = session.get('volunteer_id')
+    data = request.get_json()
+    
+    email = data.get('email')
+    phone_number = data.get('phone_number')
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+
+    if not current_password:
+        return jsonify({'success': False, 'message': '現在のパスワードは必須です。'}), 400
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({'success': False, 'message': 'データベースに接続できませんでした。'}), 500
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    
+    try:
+        # 1. 現在のパスワードを確認
+        cursor.execute("SELECT password_hash FROM Volunteers WHERE volunteer_id = %s", (volunteer_id,))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({'success': False, 'message': 'ユーザーが見つかりません。'}), 404
+
+        password_match = False
+        try:
+            password_match = bcrypt.check_password_hash(user['password_hash'], current_password)
+        except ValueError:
+            password_match = (user['password_hash'] == current_password) # Plain text fallback
+
+        if not password_match:
+            return jsonify({'success': False, 'message': '現在のパスワードが正しくありません。'}), 403
+
+        # 2. 情報を更新
+        fields_to_update = []
+        params = []
+        
+        # email and phone_number are always present in the form, so update them
+        fields_to_update.append("email = %s")
+        params.append(email)
+        fields_to_update.append("phone_number = %s")
+        params.append(phone_number)
+
+        if new_password:
+            new_password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+            fields_to_update.append("password_hash = %s")
+            params.append(new_password_hash)
+
+        query = f"UPDATE Volunteers SET {', '.join(fields_to_update)} WHERE volunteer_id = %s"
+        params.append(volunteer_id)
+        
+        cursor.execute(query, tuple(params))
+        conn.commit()
+
+        # セッション情報を更新
+        session['user_email'] = email
+        session['user_phone'] = phone_number
+
+        return jsonify({'success': True, 'message': 'プロフィールが更新されました。'})
+
+    except psycopg2.IntegrityError as e:
+        conn.rollback()
+        # emailの重複エラーをハンドリング
+        if 'volunteers_email_key' in str(e):
+             return jsonify({'success': False, 'message': 'そのメールアドレスは既に使用されています。'}), 409
+        return jsonify({'success': False, 'message': '更新中にエラーが発生しました。'}), 500
+    except Exception as e:
+        conn.rollback()
+        print(f"Profile update error: {e}")
+        return jsonify({'success': False, 'message': 'プロフィールの更新中に予期せぬエラーが発生しました。'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 @app.route('/api/recruitments')
 def get_recruitments_api():
     """ユーザー向けに募集一覧をJSONで返す。住所（市町村名）での絞り込みに対応。"""
@@ -839,7 +944,7 @@ def get_recruitments_api():
         query += " ORDER BY r.start_date DESC"
         
         cursor.execute(query, tuple(params))
-        recruitments = cursor.fetchall()
+        recruitments = [dict(row) for row in cursor.fetchall()]
         cursor.close()
         conn.close()
     except Exception as e:
@@ -877,7 +982,7 @@ def get_recruitment_detail_json(recruitment_id):
         recruitment['start_date'] = recruitment['start_date'].strftime('%Y年%m月%d日')
     if recruitment.get('end_date'):
         recruitment['end_date'] = recruitment['end_date'].strftime('%Y年%m月%d日')
-    return jsonify(recruitment)
+    return jsonify(dict(recruitment))
 
 @app.route('/api/my_activities')
 def get_my_activities():
@@ -1109,6 +1214,74 @@ def issue_certificate():
         print(f"Error generating PDF certificate: {e}")
         return jsonify({'error': '証明書の生成に失敗しました。'}), 500
 
+@app.route('/api/user/interests', methods=['GET'])
+def get_user_interests():
+    """ログイン中のユーザーが興味を持つカテゴリIDのリストを返す"""
+    if not session.get('logged_in') or not session.get('volunteer_id'):
+        return jsonify({'error': 'ログインしていません。'}), 401
+
+    volunteer_id = session.get('volunteer_id')
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "データベースに接続できませんでした。"}), 500
+
+    try:
+        # 修正: DictCursorを使用して、プロジェクトの他の部分と一貫性を保つ
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor.execute("SELECT category_id FROM VolunteerCategoryInterests WHERE volunteer_id = %s", (volunteer_id,))
+        # 修正: DictCursorの結果からデータを正しく抽出する
+        interest_ids = [row['category_id'] for row in cursor.fetchall()]
+        return jsonify(interest_ids)
+    except psycopg2.Error as err:
+        print(f"興味カテゴリの取得エラー: {err}")
+        return jsonify({"error": "データの取得に失敗しました。"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/user/interests', methods=['POST'])
+def update_user_interests():
+    """ログイン中のユーザーの興味カテゴリを更新する"""
+    if not session.get('logged_in') or not session.get('volunteer_id'):
+        return jsonify({'success': False, 'message': 'ログインが必要です。'}), 401
+
+    volunteer_id = session.get('volunteer_id')
+    data = request.get_json()
+    category_ids = data.get('category_ids', [])
+
+    # 型チェック: category_idsがリストであることを確認
+    if not isinstance(category_ids, list):
+        return jsonify({'success': False, 'message': '無効なデータ形式です。'}), 400
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({'success': False, 'message': 'データベースに接続できませんでした。'}), 500
+
+    cursor = conn.cursor()
+    try:
+        # 既存の興味カテゴリをすべて削除
+        cursor.execute("DELETE FROM VolunteerCategoryInterests WHERE volunteer_id = %s", (volunteer_id,))
+
+        # 新しい興味カテゴリを追加
+        if category_ids:
+            # executemanyを使用して複数の値を効率的に挿入
+            insert_data = [(volunteer_id, int(cat_id)) for cat_id in category_ids]
+            psycopg2.extras.execute_values(
+                cursor,
+                "INSERT INTO VolunteerCategoryInterests (volunteer_id, category_id) VALUES %s",
+                insert_data
+            )
+
+        conn.commit()
+        return jsonify({'success': True, 'message': '興味のあるカテゴリを更新しました。'})
+    except (psycopg2.Error, ValueError) as err: # ValueErrorはint(cat_id)の失敗をキャッチ
+        conn.rollback()
+        print(f"興味カテゴリの更新エラー: {err}")
+        return jsonify({'success': False, 'message': '更新中にエラーが発生しました。'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 # ------------------------------
 # AI分析機能
 # ------------------------------
@@ -1245,7 +1418,6 @@ def staff_login():
             session['org_user'] = user['username']      # 職員のユーザー名
             session['org_id'] = user['organization_id'] # 所属組織ID
             session['org_role'] = user['role']          # 権限 (OrgAdmin/Staff)
-            flash(f"ようこそ、{user['username']}様。", "success")
             return redirect(url_for('staff_menu'))
         else:
             flash("ユーザー名またはパスワードが正しくありません。", "error")
@@ -1259,11 +1431,17 @@ def staff_login():
 def staff_logout():
     """職員のログアウト処理。セッションをクリアし、ログイン画面へリダイレクトします。"""
     
-    # 🚨 修正: 確実にセッション全体をクリアする 🚨
-    session.clear() # これにより、全てのセッションキー（'org_user', 'org_id'など）が削除されます。
+    # 関連するセッションキーのみを削除
+    session.pop('org_user', None)
+    session.pop('org_id', None)
+    session.pop('org_role', None)
+
+    # ログアウト時に既存のflashメッセージをクリア
+    # これにより、ログイン成功時の「ようこそ、〇様」メッセージがログアウト後に表示されるのを防ぐ
+    if '_flashes' in session:
+        session['_flashes'].clear()
 
     # 「ログアウトしました」というメッセージを flash する
-    # Flash Messageはセッションに保存されますが、session.clear()後に再度flashすることで機能します
     flash("ログアウトしました。", "info") 
     
     # ログイン画面へリダイレクト
@@ -1453,6 +1631,16 @@ def staff_opportunity_edit_page(recruitment_id):
     # 案件IDはURLから取得され、HTML/JavaScript側で利用されます。
     return render_template("staff/re/opportunity_edit.html", recruitment_id=recruitment_id)
 
+@app.route("/staff/recruitment/detail/<int:recruitment_id>")
+def staff_opportunity_detail_page(recruitment_id):
+    """
+    案件詳細ページ (opportunity_detail_staff.html) を表示します。
+    """
+    if not check_org_login():
+        return redirect(url_for('staff_login'))
+    
+    return render_template("staff/re/opportunity_detail_staff.html", recruitment_id=recruitment_id)
+
 @app.route("/staff/api/opportunities/<int:recruitment_id>", methods=['GET'])
 def get_staff_opportunity_detail(recruitment_id):
     """
@@ -1475,16 +1663,11 @@ def get_staff_opportunity_detail(recruitment_id):
                 r.recruitment_id AS id, 
                 r.title, 
                 r.description, 
-                # スキーマ変更により削除されたカラムはここではSELECTしない
-                # r.location,             
-                # r.required_count,       
-                # r.required_skills,      
-                # ----------------------------------------------------
-                r.start_date AS activity_date,  # 活動日
-                r.end_date AS deadline,         # 募集締切日 (旧スキーマのdeadlineに相当)
-                r.contact_phone_number AS phone_number, # 問い合わせ電話番号
-                r.contact_email AS email,               # 問い合わせメールアドレス
-                r.status,                       # ステータス
+                r.start_date AS activity_date,
+                r.end_date AS deadline,
+                r.contact_phone_number AS phone_number,
+                r.contact_email AS email,
+                r.status,
                 (SELECT COUNT(*) FROM Applications a WHERE a.recruitment_id = r.recruitment_id) AS applied_count
             FROM Recruitments r
             WHERE r.recruitment_id = %s AND r.organization_id = %s
@@ -1506,11 +1689,11 @@ def get_staff_opportunity_detail(recruitment_id):
         """, (recruitment_id,))
         
         selected_categories = [row['category_id'] for row in cursor.fetchall()]
-        opportunity['categories'] = selected_categories 
         
         # 3. 全カテゴリー情報を取得
         cursor.execute("SELECT category_id, category_name FROM RecruitmentCategories ORDER BY category_id")
-        all_categories = cursor.fetchall()
+        # Explicitly convert all_categories to a list of dictionaries
+        all_categories = [dict(row) for row in cursor.fetchall()]
 
     except psycopg2.Error as err:
         print(f"クエリエラー: {err}")
@@ -1519,18 +1702,94 @@ def get_staff_opportunity_detail(recruitment_id):
         cursor.close()
         conn.close()
 
+    # Convert DictRow to a regular dictionary to add new keys
+    opportunity_dict = dict(opportunity)
+    opportunity_dict['categories'] = selected_categories
+    
     # HTML側のJSで使われる time_frame を暫定的に空文字として追加 (スキーマ変更対応)
-    opportunity['time_frame'] = '' 
+    opportunity_dict['time_frame'] = '' 
     # HTML側のJSで使われる required_count, location, required_skills の代替値 (スキーマ変更対応)
     # SQLでSELECTしていないため、ここで明示的にキーを追加し、暫定値を設定する
-    opportunity['required_count'] = 1
-    opportunity['location'] = '未指定'
-    opportunity['required_skills'] = '特になし'
+    opportunity_dict['required_count'] = 1
+    opportunity_dict['location'] = '未指定'
+    opportunity_dict['required_skills'] = '特になし'
 
     return jsonify({
-        "opportunity": opportunity,
+        "opportunity": opportunity_dict,
         "all_categories": all_categories
     })
+
+def send_new_recruitment_notifications(app, recruitment_id, category_ids):
+    """新しい募集が登録されたことを興味のあるユーザーにメールで通知する"""
+    # 修正: test_request_contextを使用して、URL生成に必要なリクエストコンテキストを作成する
+    with app.test_request_context():
+        if not category_ids:
+            return
+
+        conn = get_db_connection()
+        if conn is None:
+            print("通知メール送信のためのDB接続に失敗しました。")
+            return
+        
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        try:
+            # 1. 募集詳細を取得
+            cursor.execute("""
+                SELECT r.title, r.description, o.name as organization_name
+                FROM Recruitments r
+                JOIN Organizations o ON r.organization_id = o.organization_id
+                WHERE r.recruitment_id = %s
+            """, (recruitment_id,))
+            recruitment = cursor.fetchone()
+            if not recruitment:
+                return
+
+            # 2. 関連カテゴリに興味のあるユーザーを取得 (重複排除)
+            query = """
+                SELECT DISTINCT v.full_name, v.email
+                FROM Volunteers v
+                JOIN VolunteerCategoryInterests vci ON v.volunteer_id = vci.volunteer_id
+                WHERE vci.category_id IN %s
+            """
+            cursor.execute(query, (tuple(category_ids),))
+            users_to_notify = cursor.fetchall()
+
+            if not users_to_notify:
+                return
+
+            # 3. 各ユーザーにメールを送信
+            for user in users_to_notify:
+                subject = f"[地域支援Hub] 興味のあるカテゴリに新しい募集が追加されました"
+                # ログインページへのリンクに、リダイレクト先として募集詳細ページのパスを付与する
+                opportunity_path = url_for('opportunity_detail', recruitment_id=recruitment_id)
+                recruitment_url = url_for('user_login_page', next=opportunity_path, _external=True)
+                body = f"""
+{user['full_name']}様
+
+ご登録いただいた興味のあるカテゴリに、新しいボランティア募集が追加されましたのでお知らせします。
+
+--------------------------------
+募集タイトル: {recruitment['title']}
+募集団体: {recruitment['organization_name']}
+--------------------------------
+
+以下のリンクからご確認いただけます。
+{recruitment_url}
+
+※ログインしていない場合は、ログイン後に募集ページへ自動的に移動します。
+
+今後とも地域支援Hubをよろしくお願いいたします。
+"""
+                msg = Message(subject, sender=app.config['MAIL_USERNAME'], recipients=[user['email']], body=body)
+                mail.send(msg)
+                print(f"通知メールを {user['email']} に送信しました。")
+
+        except Exception as e:
+            print(f"通知メールの送信中にエラーが発生しました: {e}")
+        finally:
+            cursor.close()
+            conn.close()
+
 
 @app.route('/staff/api/opportunities', methods=['POST'])
 def staff_api_create_opportunity():
@@ -1544,11 +1803,11 @@ def staff_api_create_opportunity():
     org_id = session.get('org_id')
     data = request.get_json()
 
-    # 必須データのバリデーション (HTML: title, description, location, required_count, activity_date, deadline, email)
-    required_fields = ['title', 'description', 'location', 'required_count', 'activity_date', 'deadline', 'email', 'status']
+    # 必須データのバリデーション (スキーマ変更を反映し、不要な 'location', 'required_count' を削除)
+    required_fields = ['title', 'description', 'activity_date', 'deadline', 'email', 'status']
     if not all(field in data and data[field] for field in required_fields):
         # required_count は数値0も許容したい場合は調整が必要ですが、ここでは必須項目とします。
-        return jsonify({"error": "必須項目が不足しているか、空です。"}, 400)
+        return jsonify({"error": "必須項目が不足しているか、空です。"}), 400
     
     # HTML: 'published', 'draft' -> DB: 'Open', 'Draft'
     db_status = data['status']
@@ -1599,6 +1858,12 @@ def staff_api_create_opportunity():
             cursor.executemany(insert_map_query, category_values)
         
         conn.commit()
+
+        # 3. メール通知 (公開の場合のみ、バックグラウンドで実行)
+        if db_status == 'Open' and selected_categories:
+            thread = threading.Thread(target=send_new_recruitment_notifications, args=(app, new_recruitment_id, selected_categories))
+            thread.start()
+
         return jsonify({"message": f"新しい案件ID: {new_recruitment_id} が正常に作成されました。", "recruitment_id": new_recruitment_id}), 201
 
     except psycopg2.Error as err:
@@ -1610,7 +1875,7 @@ def staff_api_create_opportunity():
         print(f"予期せぬエラー: {e}")
         return jsonify({"error": f"予期せぬエラーが発生しました: {e}"}), 500
     finally:
-        if conn and conn.is_connected():
+        if conn: # psycopg2 connection object does not have is_connected() method
             cursor.close()
             conn.close()
 
@@ -1706,9 +1971,91 @@ def staff_api_update_opportunity(recruitment_id):
         print(f"予期せぬエラー: {e}")
         return jsonify({"error": f"予期せぬエラーが発生しました: {e}"}), 500
     finally:
-        if conn and conn.is_connected():
+        if conn: # psycopg2 connection object does not have is_connected() method
             cursor.close()
             conn.close()
+
+@app.route("/staff/re/applicant_list/<int:recruitment_id>")
+def staff_applicant_list_page(recruitment_id):
+    """職員向けの応募者一覧ページをレンダリングします。"""
+    if not check_org_login():
+        return redirect(url_for('staff_login'))
+    
+    # ログイン中の職員の組織IDを取得
+    org_id = session.get('org_id')
+    conn = get_db_connection()
+    if conn is None:
+        flash("データベースに接続できませんでした。", "error")
+        return redirect(url_for('staff_opportunity_list_page'))
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        # 案件が本当にこの組織のものかを確認
+        cursor.execute("SELECT title FROM Recruitments WHERE recruitment_id = %s AND organization_id = %s", (recruitment_id, org_id))
+        recruitment = cursor.fetchone()
+        if not recruitment:
+            flash("指定された募集案件が見つからないか、アクセス権がありません。", "error")
+            return redirect(url_for('staff_opportunity_list_page'))
+    except psycopg2.Error as err:
+        flash(f"案件情報の取得中にエラーが発生しました: {err}", "error")
+        return redirect(url_for('staff_opportunity_list_page'))
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render_template("staff/re/applicant_list_staff.html", recruitment_id=recruitment_id)
+
+@app.route("/staff/api/applications/by_recruitment/<int:recruitment_id>")
+def get_staff_applications_by_recruitment(recruitment_id):
+    """特定の募集案件に対する応募者一覧をJSONで返します。"""
+
+    if not check_org_login():
+        return jsonify({"error": "認証が必要です"}), 401
+
+    org_id = session.get('org_id')
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "データベースに接続できませんでした。"}), 500
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    
+    try:
+        # 案件が本当にこの組織のものかを確認し、タイトルも取得
+        cursor.execute("SELECT title FROM Recruitments WHERE recruitment_id = %s AND organization_id = %s", (recruitment_id, org_id))
+        recruitment = cursor.fetchone()
+        if recruitment is None:
+            return jsonify({"error": "アクセス権がありません。"}), 403
+        recruitment_title = recruitment['title']
+
+        # 応募者情報を取得
+        cursor.execute("""
+            SELECT 
+                a.application_id AS id,
+                v.full_name AS name,
+                v.email,
+                v.phone_number AS phone,
+                a.application_date AS date,
+                a.status
+            FROM Applications a
+            JOIN Volunteers v ON a.volunteer_id = v.volunteer_id
+            WHERE a.recruitment_id = %s
+            ORDER BY a.application_date DESC
+        """, (recruitment_id,))
+        
+        applications = [dict(row) for row in cursor.fetchall()]
+        
+        # 日付をISO形式の文字列に変換
+        for app in applications:
+            app['date'] = app['date'].isoformat() if app['date'] else ''
+
+    except psycopg2.Error as err:
+        print(f"クエリエラー: {err}")
+        return jsonify({"error": f"応募者情報の取得に失敗しました: {err}"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify({"applications": applications, "recruitment_title": recruitment_title})
 
 @app.route("/staff/re/management")
 def staff_management_menu():
@@ -1737,7 +2084,7 @@ def api_get_staff_users():
     if not check_org_login():
         return jsonify({"error": "認証されていません。"}, 401)
 
-    org_id = session.get('org_id') # この行を追加
+    org_id = session.get('org_id')
 
     conn = get_db_connection()
     if conn is None:
@@ -1747,29 +2094,11 @@ def api_get_staff_users():
     try:
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
-        # AdminUsers (職員) と Volunteers (ボランティア) の情報を結合するクエリを修正
+        # ボランティアアカウント (Volunteers) の情報のみを表示
         query = """
-        -- 職員アカウント (AdminUsers) の情報
-        (SELECT
-            admin_id AS id,
-            admin_id AS display_id, -- フロントエンド互換のためのID
-            username,
-            role AS name, -- 職員は氏名がないため、roleを仮の表示名として使用
-            NULL AS email, -- AdminUsersにはemailがないためNULL
-            organization_id AS org_id,
-            NULL AS created_at, -- 作成日時がないためNULL
-            'active' AS status,
-            CASE role WHEN 'OrgAdmin' THEN '管理者職員' ELSE '一般職員' END AS status_text,
-            TRUE AS is_org_staff -- 職員である
-        FROM AdminUsers
-        WHERE organization_id = %s)
-
-        UNION ALL
-
-        -- ボランティアアカウント (Volunteers) の情報
         (SELECT
             volunteer_id AS id,
-            volunteer_id AS display_id, -- フロントエンド互換のためのID
+            volunteer_id::text AS display_id, -- フロントエンド互換のためのID (テキスト型にキャスト)
             username,
             full_name AS name,
             email,
@@ -1783,8 +2112,9 @@ def api_get_staff_users():
 
         ORDER BY created_at DESC, id DESC;
         """
-        cursor.execute(query, (org_id, org_id))
-        users = cursor.fetchall()
+        cursor.execute(query, (org_id,))
+        # Ensure users is a list of dictionaries, even if DictCursor has issues
+        users = [dict(row) for row in cursor.fetchall()]
         
         return jsonify(users)
 
@@ -1793,13 +2123,13 @@ def api_get_staff_users():
         print(f"ユーザー一覧取得クエリエラー: {err}") 
         return jsonify({"error": f"データベースクエリ実行中にエラーが発生しました: {err}"}), 500
     finally:
-        if conn and conn.is_connected():
+        if conn: # psycopg2 connection object does not have is_connected() method
             cursor.close()
             conn.close()
 
-@app.route("/staff/re/user_edit", methods=["GET"])
+@app.route("/staff/re/user_edit/<int:user_id>", methods=["GET"])
 # 関数名を変更しました
-def staff_user_edit_page(): 
+def staff_user_edit_page(user_id): 
     """職員向けのユーザー編集画面（user_edit_staff.html）をレンダリングします。"""
     # 職員のログイン状態をチェック
     if not check_org_login():
@@ -1808,12 +2138,13 @@ def staff_user_edit_page():
     
     # user_edit_staff.html テンプレートをレンダリング
     # ※ファイルが 'staff/re/' ディレクトリ内にあることを想定しています。
-    return render_template("staff/re/user_edit_staff.html")
+    return render_template("staff/re/user_edit_staff.html", user_id=user_id)
 
 @app.route("/api/user/<int:user_id>", methods=["GET"])
 def api_get_single_user(user_id):
     """
-    指定されたIDのユーザー情報をAdminUsersまたはVolunteersテーブルから取得するAPI。
+    指定されたIDのボランティアユーザー情報を取得するAPI。
+    （登録ユーザーリストがボランティアのみを表示するため、AdminUsersの検索は削除）
     """
     # 職員のログイン状態をチェック (認証ガード)
     if not check_org_login():
@@ -1827,77 +2158,44 @@ def api_get_single_user(user_id):
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         user_data = None
         
-        # 1. 職員アカウント (AdminUsers) から検索
+        # ボランティアアカウント (Volunteers) から検索
         cursor.execute("""
             SELECT 
-                admin_id AS id, 
+                volunteer_id AS id, 
                 username, 
-                role, 
-                organization_id AS org_id
-            FROM AdminUsers 
-            WHERE admin_id = %s
+                full_name, 
+                email, 
+                organization_id AS org_id,
+                birth_year,
+                gender,
+                phone_number,
+                postal_code,
+                address
+            FROM Volunteers 
+            WHERE volunteer_id = %s
         """, (user_id,))
-        admin_user = cursor.fetchone()
+        volunteer_user = cursor.fetchone()
 
-        if admin_user:
-            # 職員のデータを整形
+        if volunteer_user:
+            # ボランティアのデータを整形
             user_data = {
-                "id": admin_user['id'],
-                "username": admin_user['username'],
-                "is_org_staff": True,
-                "role": admin_user['role'],
-                "name": admin_user['role'], # フロントエンド表示用
-                "email": None,
-                "org_id": admin_user['org_id'],
+                "id": volunteer_user['id'],
+                "username": volunteer_user['username'],
+                "is_org_staff": False, # ボランティアなので常にFalse
+                "name": volunteer_user['full_name'],
+                "email": volunteer_user['email'],
+                "org_id": volunteer_user['org_id'],
                 "is_active": True,
-                # 編集フォームのためにボランティアのフィールドをNULLで埋める
-                "full_name": f"{admin_user['role']} ({admin_user['username']})",
-                "birth_year": None,
-                "gender": None,
-                "phone_number": None,
-                "postal_code": None,
-                "address": None,
+                # 編集フォームに必要なフィールド
+                "full_name": volunteer_user['full_name'],
+                "birth_year": volunteer_user['birth_year'],
+                "gender": volunteer_user['gender'],
+                "phone_number": volunteer_user['phone_number'],
+                "postal_code": volunteer_user['postal_code'],
+                "address": volunteer_user['address'],
             }
-
-        # 2. ボランティアアカウント (Volunteers) から検索 (職員で見つからなかった場合のみ)
-        if not user_data:
-            cursor.execute("""
-                SELECT 
-                    volunteer_id AS id, 
-                    username, 
-                    full_name, 
-                    email, 
-                    organization_id AS org_id,
-                    birth_year,
-                    gender,
-                    phone_number,
-                    postal_code,
-                    address
-                FROM Volunteers 
-                WHERE volunteer_id = %s
-            """, (user_id,))
-            volunteer_user = cursor.fetchone()
-
-            if volunteer_user:
-                # ボランティアのデータを整形
-                user_data = {
-                    "id": volunteer_user['id'],
-                    "username": volunteer_user['username'],
-                    "is_org_staff": False,
-                    "name": volunteer_user['full_name'],
-                    "email": volunteer_user['email'],
-                    "org_id": volunteer_user['org_id'],
-                    "is_active": True,
-                    # 編集フォームに必要なフィールド
-                    "full_name": volunteer_user['full_name'],
-                    "birth_year": volunteer_user['birth_year'],
-                    "gender": volunteer_user['gender'],
-                    "phone_number": volunteer_user['phone_number'],
-                    "postal_code": volunteer_user['postal_code'],
-                    "address": volunteer_user['address'],
-                }
         
-        # 3. 結果の返却
+        # 結果の返却
         if user_data:
             return jsonify(user_data), 200
         else:
@@ -1907,7 +2205,7 @@ def api_get_single_user(user_id):
         print(f"単一ユーザー取得クエリエラー: {err}")
         return jsonify({"error": f"データベースクエリ実行中にエラーが発生しました: {err}"}), 500
     finally:
-        if conn and conn.is_connected():
+        if conn: # psycopg2 connection object does not have is_connected() method
             cursor.close()
             conn.close()
 
@@ -1995,7 +2293,7 @@ def api_update_user(user_id):
         print(f"予期せぬエラー: {e}")
         return jsonify({"success": False, "error": f"予期せぬエラーが発生しました: {e}"}), 500
     finally:
-        if conn and conn.is_connected():
+        if conn: # psycopg2 connection object does not have is_connected() method
             cursor.close()
             conn.close()
 
@@ -2007,7 +2305,7 @@ def delete_user(user_id):
     """
     conn = get_db_connection()
     if conn is None:
-        return jsonify({"success": False, "error": "データベース接続に失敗しました。"}, 500)
+        return jsonify({"success": False, "error": "データベース接続に失敗しました。"}), 500
 
     try:
         cursor = conn.cursor()
@@ -2039,7 +2337,7 @@ def delete_user(user_id):
         print(f"予期せぬエラー: {e}")
         return jsonify({"success": False, "error": f"予期せぬエラーが発生しました: {e}"}), 500
     finally:
-        if conn and conn.is_connected():
+        if conn:
             if 'cursor' in locals() and cursor:
                 cursor.close()
             conn.close()
@@ -2071,12 +2369,17 @@ def staff_user_invite_complete():
 @app.route("/api/register_volunteer", methods=["POST"])
 def register_volunteer():
     """新規ボランティアユーザーをデータベースに登録するAPIエンドポイント"""
+    if not check_org_login():
+        return jsonify({"error": "この操作を行うには職員としてログインする必要があります。"}), 401
+
     conn = get_db_connection()
     if conn is None:
-        return jsonify({"error": "データベース接続に失敗しました。"}, 500)
+        return jsonify({"error": "データベース接続に失敗しました。"}), 500
 
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({"error": "無効なリクエストです。JSONデータを提供してください。"}), 400
         
         # 1. 必須フィールドの取得とチェック
         username = data.get('username')
@@ -2086,23 +2389,27 @@ def register_volunteer():
         phone_number = data.get('phone_number') # 電話番号はオプションとして処理
         
         if not all([username, password, full_name, email]):
-            return jsonify({"error": "必須フィールドが不足しています。"}, 400)
+            return jsonify({"error": "必須フィールドが不足しています。"}), 400
 
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         # 2. ユーザー名の重複チェック
-        # ユーザー名（ログインID）は一意である必要がある
         cursor.execute("SELECT username FROM Volunteers WHERE username = %s", (username,))
         if cursor.fetchone():
-            return jsonify({"error": "このユーザー名（ログインID）は既に使われています。"}, 409)
+            return jsonify({"error": "このユーザー名（ログインID）は既に使われています。"}), 409
+        
+        # Emailの重複チェック
+        cursor.execute("SELECT email FROM Volunteers WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return jsonify({"error": "このメールアドレスは既に使われています。"}), 409
 
         # 3. パスワードのハッシュ化 (bcryptを使用)
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
         # 4. ユーザー情報をデータベースに挿入
-        # organization_idは、現在の実装で取得できないため、一時的に定数 'ORG-0001' を使用
-         
-        organization_id = 1 # ← この行を修正 
+        organization_id = session.get('org_id')
+        if not organization_id:
+            return jsonify({"error": "セッションから組織IDを取得できませんでした。再度ログインしてください。"}), 400
         
         insert_query = """
         INSERT INTO Volunteers 
@@ -2128,13 +2435,13 @@ def register_volunteer():
     except psycopg2.Error as err:
         conn.rollback() 
         print(f"ボランティア登録クエリエラー: {err}")
-        return jsonify({"error": f"データベースエラーが発生しました: {err}"}), 500
+        return jsonify({"error": f"データベースエラーが発生しました: {str(err)}"}), 500
     except Exception as e:
         conn.rollback()
         print(f"予期せぬエラー: {e}")
-        return jsonify({"error": f"予期せぬエラーが発生しました: {e}"}), 500
+        return jsonify({"error": f"予期せぬエラーが発生しました: {str(e)}"}), 500
     finally:
-        if conn and conn.is_connected():
+        if conn:
             if 'cursor' in locals() and cursor:
                 cursor.close()
             conn.close()
@@ -2329,7 +2636,51 @@ def staff_applications():
     if conn is None:
         flash("データベースに接続できませんでした。", "error")
         # テンプレートに空のリストを渡す
-        return render_template("staff/re/applicant_list.html", applications=[], org_name="所属組織不明") 
+        org_id = session.get('org_id')
+    org_name = "所属組織不明" # Default value
+
+    conn = get_db_connection()
+    if conn is None:
+        flash("データベースに接続できませんでした。", "error")
+        return render_template("staff/re/applicant_list.html", applications=[], org_name=org_name)
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    applications = []
+    try:
+        # Get organization name
+        cursor.execute("SELECT name FROM Organizations WHERE organization_id = %s", (org_id,))
+        org_data = cursor.fetchone()
+        if org_data:
+            org_name = org_data['name']
+
+        # Fetch applicants data
+        query = """
+        SELECT
+            a.application_id,
+            v.full_name AS applicant_name,
+            v.username AS applicant_username,
+            v.email AS applicant_email,
+            r.title AS opportunity_title,
+            r.recruitment_id AS opportunity_id,
+            a.application_date,
+            a.status AS application_status
+        FROM Applications a
+        JOIN Volunteers v ON a.volunteer_id = v.volunteer_id
+        JOIN Recruitments r ON a.recruitment_id = r.recruitment_id
+        WHERE r.organization_id = %s
+        ORDER BY a.application_date DESC;
+        """
+        cursor.execute(query, (org_id,))
+        applications = cursor.fetchall()
+        
+    except psycopg2.Error as err:
+        flash(f"応募者情報の取得中にエラーが発生しました: {err}", "error")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+    return render_template("staff/re/applicant_list.html", applications=applications, org_name=org_name) 
 
     applications = []
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -2566,8 +2917,8 @@ def get_applications_by_recruitment(recruitment_id):
     finally:
         if cursor: cursor.close()
         if conn: conn.close()
-
-        return jsonify(applications)
+    
+    return jsonify(applications)
 
 if __name__ == '__main__':
     # サーバーをネットワーク上でアクセス可能にするために host='0.0.0.0' を指定

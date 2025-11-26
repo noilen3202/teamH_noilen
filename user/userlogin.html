@@ -41,6 +41,7 @@
                 <div id="message" class="hidden text-center p-4 mb-4 text-sm rounded-lg"></div>
                 
                 <form id="loginForm" action="/user/login_process" method="POST">
+                    <input type="hidden" name="next" value="{{ next_url or '' }}">
                     <div class="space-y-6">
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700">メールアドレス</label>
@@ -85,16 +86,15 @@
                 });
                 const result = await response.json();
 
-                if (response.ok) {
+                if (response.ok && result.success) {
                     messageDiv.textContent = result.message;
                     messageDiv.classList.remove('hidden', 'bg-red-100', 'text-red-700');
                     messageDiv.classList.add('bg-green-100', 'text-green-700');
                     messageDiv.classList.remove('hidden');
                     
-                    // Redirect to recruitmentlist.html after 2 seconds
-                    setTimeout(() => {
-                        window.location.href = '/user/recruitmentlist';
-                    }, 2000);
+                    // 成功したら、APIから受け取ったURLにリダイレクト
+                    window.location.href = result.redirect_url;
+
                 } else {
                     messageDiv.textContent = result.message || 'ログインに失敗しました。';
                     messageDiv.classList.remove('hidden', 'bg-green-100', 'text-green-700');

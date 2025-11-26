@@ -302,10 +302,11 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    alert(result.message);
-                    window.location.href = '/staff/recruitment/list';
+                    // result.message が undefined の場合に備えてデフォルトメッセージを設定
+                    alert(result.message || '案件が正常に更新されました。');
+                    window.location.href = '/staff/recruitment/list'; 
                 } else {
-                    alert(`更新失敗: ${result.error}`);
+                    alert(`更新失敗: ${result.error || '不明なエラー'}`);
                 }
             } catch (error) {
                 console.error('更新中にエラーが発生しました:', error);

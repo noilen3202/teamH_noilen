@@ -279,6 +279,9 @@
                             }
 
                             allOpportunities = await response.json();
+                            
+                            loadingMessage.style.display = 'none';
+                            displayRecruitments(allOpportunities);
 
                             
 

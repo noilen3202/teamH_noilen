@@ -109,20 +109,15 @@
                 const response = await fetch(API_ENDPOINT);
                 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(`データの取得に失敗しました: ${response.status} - ${error.error}`);
+                    const errorData = await response.json();
+                    throw new Error(`データの取得に失敗しました: ${response.status} - ${errorData.error}`);
                 }
 
-                const applicants = await response.json();
+                const data = await response.json();
                 
-                // タイトル表示（最初の応募データから案件名を取得）
-                if (applicants.length > 0) {
-                    document.getElementById('recruitmentTitle').textContent = applicants[0].recruitment_title;
-                } else {
-                    document.getElementById('recruitmentTitle').textContent = '（案件情報なし）';
-                }
+                document.getElementById('recruitmentTitle').textContent = data.recruitment_title || '（案件情報なし）';
 
-                renderList(applicants);
+                renderList(data.applications);
 
             } catch (error) {
                 console.error('応募者データの取得エラー:', error);
@@ -145,24 +140,25 @@
 
             applicants.forEach(app => {
                 const row = document.createElement('tr');
-                row.innerHTML = '
-                    <td class="px-6 py-4 whitespace-nowrap">' + app.application_id + '</td>
-                    <td class="px-6 py-4 whitespace-nowrap">' + app.applicant_name + '</td>
-                    <td class="px-6 py-4 whitespace-nowrap">' + app.applicant_email + '</td>
-                    <td class="px-6 py-4 whitespace-nowrap">' + getStatusBadge(app.application_status) + '</td>
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${app.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${app.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${app.email}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${getStatusBadge(app.status)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="viewRecruitmentDetail()" class="text-blue-600 hover:text-blue-800">詳細</button>
                     </td>
-                ';
+                `;
                 listBody.appendChild(row);
             });
         }
         
         /**
-         * 応募詳細画面への遷移処理（モック）
-         * @param {number} id 応募ID
+         * 案件詳細画面への遷移処理
          */
-        function viewDetail(id) {
-             alert(`応募ID: ${id} の詳細画面へ遷移します。`);
-             // 実際の遷移: window.location.href = `/staff/application/details/${id}`;
+        function viewRecruitmentDetail() {
+             const recruitmentId = document.getElementById('recruitmentId').value;
+             window.location.href = `/staff/recruitment/detail/${recruitmentId}`;
         }
 
     </script>
