@@ -62,6 +62,18 @@
                     
                     <form action="" method="POST" class="space-y-6">
                         <div>
+                            <div class="flex justify-between items-center">
+                                <label for="prefecture" class="block text-sm font-medium text-gray-700">都道府県</label>
+                            </div>
+                            <select id="prefecture" name="prefecture" required class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <option value="" disabled selected>選択してください</option>
+                                {% for pref in prefectures %}
+                                    <option value="{{ pref }}">{{ pref }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
                             <label for="org_name" class="block text-sm font-medium text-gray-700">市町村名</label>
                             <input type="text" id="org_name" name="org_name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="例: ○○市">
                         </div>
@@ -88,9 +100,10 @@
     </footer>
 
     <script>
-        // Set today's date as the default for the application date field
-        document.getElementById('app_date').valueAsDate = new Date();
+        document.addEventListener('DOMContentLoaded', function () {
+            // Set today's date as the default for the application date field
+            document.getElementById('app_date').valueAsDate = new Date();
+        });
     </script>
-
 </body>
 </html>

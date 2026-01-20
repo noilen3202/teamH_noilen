@@ -36,55 +36,35 @@
             <p class="text-gray-600 mt-2">あなたの力を地域のために。興味のある活動を見つけて応募しましょう。</p>
         </div>
 
-                <!-- 住所絞り込みフォーム -->
-
-                <div class="max-w-2xl mx-auto bg-white p-4 rounded-lg shadow-md mb-10">
-
-                    <h3 class="text-lg font-semibold mb-3 text-center text-gray-800">市町村名で絞り込む</h3>
-
-                    <div class="relative">
-
-                        <select id="organization-select" class="block w-full appearance-none bg-white p-3 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-
-                            <!-- Options will be populated by JS -->
-
-                        </select>
-
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-
-                            <i class="fas fa-chevron-down"></i>
-
-                        </div>
-
-                    </div>
-
+        <!-- フィルターセクション -->
+        <div class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg mb-10">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <!-- 都道府県フィルター -->
+                <div class="md:col-span-1">
+                    <label for="prefecture-select" class="block text-sm font-bold text-gray-700 mb-1">都道府県</label>
+                    <select id="prefecture-select" class="block w-full appearance-none bg-white p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
                 </div>
 
-        
-
-                <!-- カテゴリフィルター -->
-
-                <div class="max-w-md mx-auto mb-10">
-
-                    <label for="category-select" class="block text-sm font-medium text-gray-700 mb-2">カテゴリーで絞り込み:</label>
-
-                    <div class="relative">
-
-                        <select id="category-select" class="block w-full appearance-none bg-white p-3 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-
-                            <!-- Options will be populated by JS -->
-
-                        </select>
-
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-
-                            <i class="fas fa-chevron-down"></i>
-
-                        </div>
-
-                    </div>
-
+                <!-- 市町村フィルター -->
+                <div class="md:col-span-1">
+                    <label for="municipality-select" class="block text-sm font-bold text-gray-700 mb-1">市町村</label>
+                    <select id="municipality-select" class="block w-full appearance-none bg-white p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" disabled></select>
                 </div>
+
+                <!-- カテゴリーフィルター -->
+                <div class="md:col-span-1">
+                    <label for="category-select" class="block text-sm font-bold text-gray-700 mb-1">カテゴリー</label>
+                    <select id="category-select" class="block w-full appearance-none bg-white p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+
+                <!-- 検索ボタン -->
+                <div class="md:col-span-1">
+                    <button id="filter-btn" class="w-full bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition duration-300 shadow-md text-lg">
+                        <i class="fas fa-search mr-2"></i>検索
+                    </button>
+                </div>
+            </div>
+        </div>
 
         
 
@@ -114,278 +94,639 @@
 
         
 
-            <script>
-
-                document.addEventListener('DOMContentLoaded', function() {
-
-                    const listContainer = document.getElementById('recruitment-list');
-
-                    const loadingMessage = document.getElementById('loading-message');
-
-                    let allOpportunities = []; // 全ての募集案件を保持
+                <script>
 
         
 
-                    // --- 住所絞り込みのロジック ---
-
-                    async function renderOrganizationDropdown() {
-
-                        try {
-
-                            const response = await fetch('/api/organizations');
-
-                            if (!response.ok) throw new Error('市町村一覧の取得に失敗しました');
-
-                            
-
-                            const organizations = await response.json();
-
-                            const selectElement = document.getElementById('organization-select');
-
-                            
-
-                            let optionsHTML = `<option value="">すべての市町村</option>`;
-
-                            organizations.forEach(org => {
-
-                                optionsHTML += `<option value="${org.name}">${org.name}</option>`;
-
-                            });
+                    document.addEventListener('DOMContentLoaded', function() {
 
         
 
-                            selectElement.innerHTML = optionsHTML;
+                        const prefectureSelect = document.getElementById('prefecture-select');
 
         
 
-                            selectElement.addEventListener('change', (event) => {
-
-                                const selectedOrg = event.target.value;
-
-                                if (selectedOrg) {
-
-                                    window.location.href = `/user/tiiki?address=${encodeURIComponent(selectedOrg)}`;
-
-                                } else {
-
-                                    // 「すべての市町村」が選択された場合は、全件表示に戻す
-
-                                    displayRecruitments(allOpportunities);
-
-                                }
-
-                            });
+                        const municipalitySelect = document.getElementById('municipality-select');
 
         
 
-                        } catch (error) {
-
-                            console.error(error);
-
-                            const selectElement = document.getElementById('organization-select');
-
-                            selectElement.innerHTML = '<option value="">市町村の読込に失敗</option>';
-
-                        }
-
-                    }
+                        const categorySelect = document.getElementById('category-select');
 
         
 
-                    // カテゴリドロップダウンをAPIから取得して生成
-
-                    async function renderCategoryDropdown() {
-
-                        try {
-
-                            const response = await fetch('/api/categories');
-
-                            if (!response.ok) throw new Error('カテゴリの取得に失敗しました');
-
-                            
-
-                            const categories = await response.json();
-
-                            const selectElement = document.getElementById('category-select');
-
-                            
-
-                            // 「すべて」オプション
-
-                            let optionsHTML = `<option value="all">すべてのカテゴリー</option>`;
-
-                            
-
-                            // DBから取得したカテゴリのオプション
-
-                            categories.forEach(category => {
-
-                                optionsHTML += `<option value="${category.category_name}">${category.category_name}</option>`;
-
-                            });
+                        const filterBtn = document.getElementById('filter-btn');
 
         
 
-                            selectElement.innerHTML = optionsHTML;
+                        const listContainer = document.getElementById('recruitment-list');
 
         
 
-                            // ドロップダウンの変更イベントをリッスン
+                        const loadingMessage = document.getElementById('loading-message');
 
-                            selectElement.addEventListener('change', (event) => {
+        
 
-                                const selectedCategory = event.target.value;
+            
 
-                                const filteredOpportunities = allOpportunities.filter(opportunity => {
+        
 
-                                    const categoryName = opportunity.category || '未分類';
+                        // --- Dropdown Population Functions ---
 
-                                    return selectedCategory === 'all' || categoryName === selectedCategory;
+        
+
+            
+
+        
+
+                        async function populatePrefectureDropdown() {
+
+        
+
+                            try {
+
+        
+
+                                const response = await fetch('/api/prefectures');
+
+        
+
+                                if (!response.ok) throw new Error('都道府県の取得に失敗');
+
+        
+
+                                const prefectures = await response.json();
+
+        
+
+                                
+
+        
+
+                                prefectureSelect.innerHTML = '<option value="">すべての都道府県</option>';
+
+        
+
+                                prefectures.forEach(pref => {
+
+        
+
+                                    prefectureSelect.innerHTML += `<option value="${pref.prefecture_id}">${pref.name}</option>`;
+
+        
 
                                 });
 
-                                displayRecruitments(filteredOpportunities);
+        
+
+                            } catch (error) {
+
+        
+
+                                console.error(error);
+
+        
+
+                                prefectureSelect.innerHTML = '<option value="">取得に失敗</option>';
+
+        
+
+                            }
+
+        
+
+                        }
+
+        
+
+            
+
+        
+
+                        async function populateMunicipalityDropdown(prefectureId) {
+
+        
+
+                            municipalitySelect.innerHTML = '<option value="">読み込み中...</option>';
+
+        
+
+                            municipalitySelect.disabled = true;
+
+        
+
+            
+
+        
+
+                            if (!prefectureId) {
+
+        
+
+                                municipalitySelect.innerHTML = '<option value="">県を選択してください</option>';
+
+        
+
+                                return;
+
+        
+
+                            }
+
+        
+
+            
+
+        
+
+                            try {
+
+        
+
+                                const response = await fetch(`/api/municipalities?prefecture_id=${prefectureId}`);
+
+        
+
+                                if (!response.ok) throw new Error('市町村の取得に失敗');
+
+        
+
+                                const municipalities = await response.json();
+
+        
+
+            
+
+        
+
+                                municipalitySelect.innerHTML = '<option value="">すべての市町村</option>';
+
+        
+
+                                municipalities.forEach(mun => {
+
+        
+
+                                    municipalitySelect.innerHTML += `<option value="${mun.organization_id}">${mun.name}</option>`;
+
+        
+
+                                });
+
+        
+
+                                municipalitySelect.disabled = false;
+
+        
+
+                            } catch (error) {
+
+        
+
+                                console.error(error);
+
+        
+
+                                municipalitySelect.innerHTML = '<option value="">取得に失敗</option>';
+
+        
+
+                            }
+
+        
+
+                        }
+
+        
+
+            
+
+        
+
+                        async function populateCategoryDropdown() {
+
+        
+
+                            try {
+
+        
+
+                                const response = await fetch('/api/categories');
+
+        
+
+                                if (!response.ok) throw new Error('カテゴリの取得に失敗');
+
+        
+
+                                const categories = await response.json();
+
+        
+
+                                
+
+        
+
+                                categorySelect.innerHTML = '<option value="">すべてのカテゴリー</option>';
+
+        
+
+                                categories.forEach(cat => {
+
+        
+
+                                    categorySelect.innerHTML += `<option value="${cat.category_name}">${cat.category_name}</option>`;
+
+        
+
+                                });
+
+        
+
+                            } catch (error) {
+
+        
+
+                                console.error(error);
+
+        
+
+                                categorySelect.innerHTML = '<option value="">取得に失敗</option>';
+
+        
+
+                            }
+
+        
+
+                        }
+
+        
+
+            
+
+        
+
+                        // --- Recruitment Fetching and Display ---
+
+        
+
+            
+
+        
+
+                        function displayRecruitments(recruitments) {
+
+        
+
+                            loadingMessage.style.display = 'none';
+
+        
+
+                            listContainer.innerHTML = '';
+
+        
+
+                            if (recruitments.length === 0) {
+
+        
+
+                                listContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">現在、募集中のボランティアはありません。</p>';
+
+        
+
+                                return;
+
+        
+
+                            }
+
+        
+
+                            recruitments.forEach(rec => {
+
+        
+
+                                const card = document.createElement('div');
+
+        
+
+                                card.className = 'recruitment-card bg-white rounded-xl shadow-lg overflow-hidden';
+
+        
+
+                                
+
+        
+
+                                const cardContent = `
+
+        
+
+                                    <div class="p-6">
+
+        
+
+                                        <div class="flex justify-between items-start mb-3">
+
+        
+
+                                            <span class="text-indigo-800 text-xs font-semibold uppercase tracking-wider">${rec.organization_name || ''}</span>
+
+        
+
+                                            <span class="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">${rec.category || '未分類'}</span>
+
+        
+
+                                        </div>
+
+        
+
+                                        <h3 class="text-xl font-bold text-gray-900 mb-2">${rec.title}</h3>
+
+        
+
+                                        <p class="text-gray-600 text-sm mb-4" style="overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4;">${rec.description || '詳細情報はありません。'}</p>
+
+        
+
+                                        <div class="text-right">
+
+        
+
+                                            <a href="/user/recruitmentapply?id=${rec.recruitment_id}" class="font-semibold text-blue-700 hover:text-blue-900">詳細を見て応募する <i class="fas fa-arrow-right ml-1"></i></a>
+
+        
+
+                                        </div>
+
+        
+
+                                    </div>
+
+        
+
+                                `;
+
+        
+
+                                card.innerHTML = cardContent;
+
+        
+
+                                listContainer.appendChild(card);
+
+        
 
                             });
 
         
 
-                        } catch (error) {
-
-                            console.error(error);
-
-                            const selectElement = document.getElementById('category-select');
-
-                            selectElement.innerHTML = '<option value="all">カテゴリーの読込に失敗</option>';
-
                         }
-
-                    }
 
         
 
-                    // --- 募集一覧の取得と表示 ---
+            
 
-                    async function fetchAndDisplayRecruitments() {
+        
 
-                        try {
+                        async function fetchAndDisplayRecruitments(params = {}) {
 
-                            const response = await fetch('/api/recruitments');
+        
 
-                            if (!response.ok) {
+                            listContainer.innerHTML = '';
 
-                                throw new Error('募集情報の取得に失敗しました。');
+        
+
+                            loadingMessage.style.display = 'block';
+
+        
+
+            
+
+        
+
+                            const query = new URLSearchParams(params).toString();
+
+        
+
+            
+
+        
+
+                            try {
+
+        
+
+                                const response = await fetch(`/api/recruitments?${query}`);
+
+        
+
+                                if (!response.ok) throw new Error('募集情報の取得に失敗');
+
+        
+
+                                const recruitments = await response.json();
+
+        
+
+                                displayRecruitments(recruitments);
+
+        
+
+                            } catch (error) {
+
+        
+
+                                loadingMessage.style.display = 'none';
+
+        
+
+                                listContainer.innerHTML = `<p class="col-span-full text-center text-red-500">${error.message}</p>`;
+
+        
 
                             }
 
-                            allOpportunities = await response.json();
-                            
-                            loadingMessage.style.display = 'none';
-                            displayRecruitments(allOpportunities);
-
-                            
-
-                            loadingMessage.style.display = 'none';
-
-                            displayRecruitments(allOpportunities);
-
         
-
-                        } catch (error) {
-
-                            console.error(error);
-
-                            loadingMessage.style.display = 'none';
-
-                            listContainer.innerHTML = `<p class="col-span-full text-center text-red-500">${error.message}</p>`;
 
                         }
 
-                    }
+        
+
+            
 
         
 
-                    function displayRecruitments(recruitments) {
-
-                        listContainer.innerHTML = '';
-
-                        if (recruitments.length === 0) {
-
-                            listContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">現在、募集中のボランティアはありません。</p>';
-
-                            return;
-
-                        }
-
-                        recruitments.forEach(rec => {
-
-                            const card = document.createElement('div');
-
-                            card.className = 'recruitment-card bg-white rounded-xl shadow-lg overflow-hidden';
-
-                            card.setAttribute('data-category', rec.category || '未分類');
+                        // --- Event Listeners ---
 
         
 
-                            const cardContent = `
+            
 
-                                <div class="p-6">
+        
 
-                                    <div class="flex justify-between items-start mb-3">
+                        prefectureSelect.addEventListener('change', () => {
 
-                                        <span class="text-indigo-800 text-xs font-semibold uppercase tracking-wider">${rec.organization_name || ''}</span>
+        
 
-                                        <span class="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">${rec.category || '未分類'}</span>
+                            const prefectureId = prefectureSelect.value;
 
-                                    </div>
+        
 
-                                    <h3 class="text-xl font-bold text-gray-900 mb-2">${rec.title}</h3>
+                            populateMunicipalityDropdown(prefectureId);
 
-                                    <p class="text-gray-600 text-sm mb-4" style="overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4;">${rec.description || '詳細情報はありません。'}</p>
-
-                                    <div class="text-right">
-
-                                        <a href="/user/recruitmentapply?id=${rec.recruitment_id}" class="font-semibold text-blue-700 hover:text-blue-900">詳細を見て応募する <i class="fas fa-arrow-right ml-1"></i></a>
-
-                                    </div>
-
-                                </div>
-
-                            `;
-
-                            card.innerHTML = cardContent;
-
-                            listContainer.appendChild(card);
+        
 
                         });
 
-                    }
+        
+
+            
 
         
 
-                    // 初期化
-
-                    async function init() {
-
-                        await renderOrganizationDropdown(); // 市町村ドロップダウンを先に読み込み
-
-                        await renderCategoryDropdown(); // カテゴリドロップダウンを次に読み込み
-
-                        await fetchAndDisplayRecruitments(); // 最後に募集案件を読み込み
-
-                    }
+                        filterBtn.addEventListener('click', () => {
 
         
 
-                    init();
+                            const params = {};
 
-                });
+        
 
-            </script>
+                            const prefectureId = prefectureSelect.value;
 
-        </body>
+        
 
-        </html>
+                            const municipalityId = municipalitySelect.value;
+
+        
+
+                            const category = categorySelect.value;
+
+        
+
+            
+
+        
+
+                            // Priority: municipality > prefecture > category
+
+        
+
+                            if (municipalityId) {
+
+        
+
+                                params.organization_id = municipalityId;
+
+        
+
+                            } else if (prefectureId) {
+
+        
+
+                                params.prefecture_id = prefectureId;
+
+        
+
+                            }
+
+        
+
+            
+
+        
+
+                            if (category) {
+
+        
+
+                                params.category = category;
+
+        
+
+                            }
+
+        
+
+                            
+
+        
+
+                            fetchAndDisplayRecruitments(params);
+
+        
+
+                        });
+
+        
+
+            
+
+        
+
+                        // --- Initialization ---
+
+        
+
+            
+
+        
+
+                        async function init() {
+
+        
+
+                            await Promise.all([
+
+        
+
+                                populatePrefectureDropdown(),
+
+        
+
+                                populateCategoryDropdown()
+
+        
+
+                            ]);
+
+        
+
+                            // Initial load of all recruitments
+
+        
+
+                            fetchAndDisplayRecruitments();
+
+        
+
+                        }
+
+        
+
+            
+
+        
+
+                        init();
+
+        
+
+                    });
+
+        
+
+                </script>
+
+        
+
+            </body>
+
+        
+
+            </html>
 
         
 

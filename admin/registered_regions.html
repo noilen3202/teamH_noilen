@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登録済み地域一覧 - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-gray-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-map-marked-alt mr-3"></i>登録済み地域一覧
+            </h1>
+            <a href="{{ url_for('admin_dashboard') }}" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-blue-600 hover:bg-blue-700">
+                <i class="fas fa-arrow-left mr-2"></i>ダッシュボードへ戻る
+            </a>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow container mx-auto p-4 md:p-8">
+        <section class="mb-8">
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-2">登録済み地域一覧</h2>
+            <p class="text-gray-600">登録されている都道府県と市町村の一覧です。</p>
+        </section>
+
+        <!-- Search Form (will be added in Phase 2) -->
+        <section class="mb-8 p-6 bg-white rounded-xl shadow-md">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">地域を検索</h3>
+            <form action="{{ url_for('admin_registered_regions') }}" method="GET" class="flex space-x-4">
+                <input type="text" name="prefecture_name" placeholder="都道府県名で検索" class="flex-grow px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ request.args.get('prefecture_name', '') }}">
+                <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-search mr-2"></i>検索
+                </button>
+                {% if request.args.get('prefecture_name') %}
+                <a href="{{ url_for('admin_registered_regions') }}" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200">
+                    クリア
+                </a>
+                {% endif %}
+            </form>
+        </section>
+
+        <!-- 地域一覧テーブル -->
+        <section class="mb-8 p-6 bg-white rounded-xl shadow-md">
+            {% if locations %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                都道府県名
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                市町村名
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for location in locations %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ location.prefecture_name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ location.organization_name }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-500">登録されている地域情報はありません。</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>admin専用インターフェース</p>
+    </footer>
+
+</body>
+</html>
