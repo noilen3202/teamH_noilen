@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お問い合わせ - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .header-main {
+            background-color: #3b82f6; /* Blue 500 */
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .content-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-top: 5px solid #3b82f6;
+        }
+        .form-input, .form-textarea, .form-select {
+            border: 1px solid #d1d5db;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            border-color: #3b82f6; /* Blue focus */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+            outline: none;
+        }
+        .required-label:after { 
+            content: " *"; 
+            color: #ef4444; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ヘッダー -->
+    <header class="header-main">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-question-circle mr-2"></i>お問い合わせ
+            </h1>
+            <!-- ホーム画面（未作成）に戻る想定 -->
+            <a href="./homepage.html" class="text-white hover:text-gray-200 transition duration-200 p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm">
+                <i class="fas fa-home mr-2"></i>ホームへ戻る
+            </a>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-4xl mx-auto p-4 md:p-8">
+
+        <div class="content-card p-6 md:p-8">
+            <p class="text-gray-600 mb-6 border-b pb-4">
+                地域支援 Hub に関するご質問、ご要望、不具合報告などは、以下のフォームよりお問い合わせください。
+            </p>
+
+            <form id="contactForm">
+
+                <!-- 1. お問い合わせ種別 -->
+                <div class="mb-6">
+                    <label for="category" class="block text-sm font-medium text-gray-700 mb-2 required-label">お問い合わせ種別</label>
+                    <select id="category" name="category" class="form-select" required>
+                        <option value="" disabled selected>選択してください</option>
+                        <option value="question">一般的な質問・操作方法について</option>
+                        <option value="request">機能改善・ご要望</option>
+                        <option value="bug">不具合・エラー報告</option>
+                        <option value="account">アカウント・登録情報について</option>
+                        <option value="other">その他</option>
+                    </select>
+                </div>
+
+                <!-- 2. お名前と連絡先 -->
+                <fieldset class="border border-gray-200 p-4 rounded-lg mb-6">
+                    <legend class="text-lg font-semibold text-gray-700 px-2">ご連絡先</legend>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2 required-label">お名前</label>
+                            <!-- 登録ユーザーの場合は 'value' に自動入力される想定 -->
+                            <input type="text" id="name" name="name" class="form-input" value="山田 太郎 (ボランティア)" required>
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2 required-label">メールアドレス</label>
+                            <input type="email" id="email" name="email" class="form-input" value="yamada.t@example.com" required>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">電話番号 (任意)</label>
+                        <input type="tel" id="phone" name="phone" class="form-input" placeholder="例: 090-1234-5678">
+                        <p class="text-xs text-gray-500 mt-1">メールでのご連絡が取れない場合のみ使用します。</p>
+                    </div>
+                </fieldset>
+                
+                <!-- 3. 詳細内容 -->
+                <div class="mb-6">
+                    <label for="subject" class="block text-sm font-medium text-gray-700 mb-2 required-label">件名</label>
+                    <input type="text" id="subject" name="subject" class="form-input" placeholder="例: ボランティア募集への応募方法について" required>
+                </div>
+
+                <div class="mb-6">
+                    <label for="message" class="block text-sm font-medium text-gray-700 mb-2 required-label">お問い合わせ内容 (詳細)</label>
+                    <textarea id="message" name="message" rows="8" class="form-textarea" placeholder="具体的な状況やエラーメッセージなどを詳しくご記入ください。" required></textarea>
+                </div>
+                
+                <!-- 送信ボタン -->
+                <div class="mt-8">
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold text-xl hover:bg-blue-700 transition duration-300 shadow-lg shadow-blue-300/50">
+                        <i class="fas fa-paper-plane mr-2"></i>送信する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- JavaScript for form submission handling -->
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // フォームデータを取得
+            const contactData = {
+                category: document.getElementById('category').value,
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value,
+                timestamp: new Date().toISOString()
+            };
+
+            // 実際はFirestoreのContact_Inquiriesコレクションなどに登録処理を行う
+
+            // 送信完了メッセージを表示
+            alert(`お問い合わせを受け付けました。ご入力いただいたメールアドレス (${contactData.email}) に確認メールを送信します。（モック）`);
+            
+            // フォームをリセットし、ホーム画面へ遷移
+            this.reset();
+            window.location.href = './homepage.html'; 
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ opportunity.title }} - 募集詳細</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a; /* Dark Blue for municipal feeling */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            color: white;
+            padding: 0.75rem 1.5rem;
+        }
+        .nav-link {
+            transition: color 0.2s, background-color 0.2s;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+        .nav-link:hover {
+            background-color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. ヘッダー (ナビゲーション) -->
+    <header class="main-header">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">地域支援 Hub</h1>
+            <nav class="hidden md:flex space-x-4">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-home mr-2"></i>HOME
+                </a>
+                <a href="/#recruitment-section" class="nav-link">
+                    <i class="fas fa-clipboard-list mr-2"></i>掲示板 (募集一覧)
+                </a>
+                <a href="/hp/toiawase.html" class="nav-link bg-red-500 hover:bg-red-600">
+                    <i class="fas fa-question-circle mr-2"></i>問い合わせ
+                </a>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden p-2 rounded-md hover:bg-blue-600">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+        <!-- モバイルメニュー (非表示状態) -->
+        <div id="mobile-menu" class="hidden md:hidden mt-2 space-y-2">
+            <a href="/" class="nav-link block text-center">HOME</a>
+            <a href="/#recruitment-section" class="nav-link block text-center">掲示板 (募集一覧)</a>
+            <a href="/hp/toiawase.html" class="nav-link block text-center bg-red-500 hover:bg-red-600">問い合わせ</a>
+        </div>
+    </header>
+
+    <!-- 2. メインコンテンツ -->
+    <main class="max-w-4xl mx-auto p-4 md:p-8">
+        <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-4">{{ opportunity.title }}</h2>
+            
+            {% if opportunity.image_filename %}
+            <div class="mb-6">
+                <img src="{{ url_for('uploaded_file', filename='recruitment_images/' + opportunity.image_filename) }}" alt="{{ opportunity.title }}" class="w-full h-64 object-cover rounded-lg shadow-md">
+            </div>
+            {% endif %}
+
+            <div class="text-gray-700 space-y-4 mb-6">
+                <p class="text-lg break-words">{{ opportunity.description }}</p>
+                <p><strong>募集期間:</strong> {{ opportunity.start_date }} {% if opportunity.end_date %}〜 {{ opportunity.end_date }}{% else %}〜 未定{% endif %}</p>
+
+            </div>
+            <a href="/" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <i class="fas fa-arrow-left mr-2"></i> 募集一覧に戻る
+            </a>
+        </div>
+    </main>
+
+    <!-- 5. フッター -->
+    <footer class="mt-12 py-6 bg-gray-800 text-white text-center">
+        <div class="mb-2">
+            <a href="/hp/toiawase.html" class="text-gray-300 hover:text-white transition duration-200">
+                <i class="fas fa-headset mr-1"></i> 市町村区へのお問い合わせ
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> 地域課題解決プラットフォーム. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentYear = new Date().getFullYear();
+            document.getElementById('current-year').textContent = currentYear;
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        });
+    </script>
+</body>
+</html>

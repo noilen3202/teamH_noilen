@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>募集一覧 - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .recruitment-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .recruitment-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .filter-btn { transition: all 0.3s ease; color: #4b5563; background-color: #f3f4f6; }
+        .filter-btn.active { color: white; background-color: #1e3a8a; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-blue-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold"><i class="fas fa-hands-helping mr-2"></i>地域支援 Hub</h1>
+            <nav class="hidden md:flex items-center space-x-4">
+                <a href="/" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">ホーム</a>
+                <a href="/user/recruitmentlist" class="bg-blue-600 px-3 py-2 rounded-md text-sm font-medium">募集一覧</a>
+                <a href="/mypage" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">マイページ</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow container mx-auto p-4 md:p-8">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-extrabold text-gray-900">ボランティア募集一覧</h2>
+            <p class="text-gray-600 mt-2">あなたの力を地域のために。興味のある活動を見つけて応募しましょう。</p>
+        </div>
+
+        <!-- 住所絞り込みフォーム -->
+        <div class="max-w-2xl mx-auto bg-white p-4 rounded-lg shadow-md mb-10">
+            <h3 class="text-lg font-semibold mb-3 text-center text-gray-800">市区町村名で絞り込む</h3>
+            <div class="relative">
+                <select id="organization-select" class="block w-full appearance-none bg-white p-3 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <!-- Options will be populated by JS -->
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- カテゴリフィルター -->
+        <div class="max-w-md mx-auto mb-10">
+            <label for="category-select" class="block text-sm font-medium text-gray-700 mb-2">カテゴリーで絞り込み:</label>
+            <div class="relative">
+                <select id="category-select" class="block w-full appearance-none bg-white p-3 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <!-- Options will be populated by JS -->
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 募集一覧がここに動的に挿入されます -->
+        <div id="recruitment-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- ローディングスピナーまたはメッセージ -->
+            <p id="loading-message" class="col-span-full text-center text-gray-500">絞り込み結果を検索中です...</p>
+        </div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>&copy; 2025 地域支援 Hub. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const listContainer = document.getElementById('recruitment-list');
+            const loadingMessage = document.getElementById('loading-message');
+            const orgSelect = document.getElementById('organization-select');
+            const categorySelect = document.getElementById('category-select');
+            let allOpportunities = [];
+
+            // URLから住所パラメータを取得
+            const urlParams = new URLSearchParams(window.location.search);
+            const address = urlParams.get('address');
+
+            async function renderOrganizationDropdown() {
+                try {
+                    const response = await fetch('/api/organizations');
+                    if (!response.ok) throw new Error('市区町村一覧の取得に失敗しました');
+                    
+                    const organizations = await response.json();
+                    
+                    let optionsHTML = `<option value="">すべての市区町村</option>`;
+                    organizations.forEach(org => {
+                        const selected = (org.name === address) ? 'selected' : '';
+                        optionsHTML += `<option value="${org.name}" ${selected}>${org.name}</option>`;
+                    });
+
+                    orgSelect.innerHTML = optionsHTML;
+
+                    orgSelect.addEventListener('change', (event) => {
+                        const selectedOrg = event.target.value;
+                        if (selectedOrg) {
+                            window.location.href = `/user/tiiki?address=${encodeURIComponent(selectedOrg)}`;
+                        } else {
+                            window.location.href = '/user/recruitmentlist';
+                        }
+                    });
+
+                } catch (error) {
+                    console.error(error);
+                    orgSelect.innerHTML = '<option value="">市区町村の読込に失敗</option>';
+                }
+            }
+
+            async function renderCategoryDropdown() {
+                try {
+                    const response = await fetch('/api/categories');
+                    if (!response.ok) throw new Error('カテゴリの取得に失敗しました');
+                    
+                    const categories = await response.json();
+                    
+                    let optionsHTML = `<option value="all">すべてのカテゴリー</option>`;
+                    categories.forEach(category => {
+                        optionsHTML += `<option value="${category.category_name}">${category.category_name}</option>`;
+                    });
+
+                    categorySelect.innerHTML = optionsHTML;
+
+                    categorySelect.addEventListener('change', (event) => {
+                        const selectedCategory = event.target.value;
+                        const filteredOpportunities = allOpportunities.filter(opportunity => {
+                            const categoryName = opportunity.category || '未分類';
+                            return selectedCategory === 'all' || categoryName === selectedCategory;
+                        });
+                        displayRecruitments(filteredOpportunities, address);
+                    });
+
+                } catch (error) {
+                    console.error(error);
+                    categorySelect.innerHTML = '<option value="all">カテゴリーの読込に失敗</option>';
+                }
+            }
+
+            if (address) {
+                fetchAndDisplayRecruitments(address);
+            } else {
+                loadingMessage.textContent = '絞り込む市区町村名が指定されていません。';
+            }
+
+            // --- 募集一覧の取得と表示 ---
+            async function fetchAndDisplayRecruitments(addressQuery) {
+                try {
+                    const response = await fetch(`/api/recruitments?address=${encodeURIComponent(addressQuery)}`);
+                    if (!response.ok) {
+                        throw new Error('募集情報の取得に失敗しました。');
+                    }
+                    allOpportunities = await response.json();
+                    
+                    loadingMessage.style.display = 'none';
+                    displayRecruitments(allOpportunities, addressQuery);
+
+                } catch (error) {
+                    console.error(error);
+                    loadingMessage.style.display = 'none';
+                    listContainer.innerHTML = `<p class="col-span-full text-center text-red-500">${error.message}</p>`;
+                }
+            }
+
+            function displayRecruitments(recruitments, addressQuery) {
+                listContainer.innerHTML = '';
+                if (recruitments.length === 0) {
+                    listContainer.innerHTML = `<p class="col-span-full text-center text-gray-500">「${addressQuery}」に一致する募集中のボランティアはありませんでした。</p>`;
+                    return;
+                }
+                recruitments.forEach(rec => {
+                    const card = document.createElement('div');
+                    card.className = 'recruitment-card bg-white rounded-xl shadow-lg overflow-hidden';
+                    card.setAttribute('data-category', rec.category || '未分類');
+
+                    const cardContent = `
+                        <div class="p-6">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="text-indigo-800 text-xs font-semibold uppercase tracking-wider">${rec.organization_name || ''}</span>
+                                <span class="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">${rec.category || '未分類'}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">${rec.title}</h3>
+                            <p class="text-gray-600 text-sm mb-4 h-20 overflow-hidden">${rec.description ? rec.description.substring(0, 100) : '詳細情報はありません。'}${rec.description && rec.description.length > 100 ? '...' : ''}</p>
+                            <div class="text-right">
+                                <a href="/user/recruitmentapply?id=${rec.recruitment_id}" class="font-semibold text-blue-700 hover:text-blue-900">詳細を見て応募する <i class="fas fa-arrow-right ml-1"></i></a>
+                            </div>
+                        </div>
+                    `;
+                    card.innerHTML = cardContent;
+                    listContainer.appendChild(card);
+                });
+            }
+
+            async function init() {
+                await renderOrganizationDropdown();
+                await renderCategoryDropdown();
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>

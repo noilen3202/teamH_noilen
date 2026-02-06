@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お問い合わせ - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a; /* Dark Blue for municipal feeling */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            color: white;
+            padding: 0.75rem 1.5rem;
+        }
+        .nav-link {
+            transition: color 0.2s, background-color 0.2s;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+        .nav-link:hover {
+            background-color: #3b82f6;
+        }
+        .form-group label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="tel"],
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            color: #1f2937;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+            outline: none;
+        }
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .submit-button {
+            background-color: #10b981; /* Emerald Green */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        .submit-button:hover {
+            background-color: #059669;
+        }
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .success-message {
+            color: #10b981;
+            font-size: 1rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. ヘッダー (ナビゲーション) -->
+    <header class="main-header">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">地域支援 Hub</h1>
+            <nav class="hidden md:flex space-x-4">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-home mr-2"></i>HOME
+                </a>
+                <a href="/#recruitment-section" class="nav-link">
+                    <i class="fas fa-clipboard-list mr-2"></i>掲示板 (募集一覧)
+                </a>
+                <a href="/hp/toiawase.html" class="nav-link bg-red-500 hover:bg-red-600">
+                    <i class="fas fa-question-circle mr-2"></i>問い合わせ
+                </a>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden p-2 rounded-md hover:bg-blue-600">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+        <!-- モバイルメニュー (非表示状態) -->
+        <div id="mobile-menu" class="hidden md:hidden mt-2 space-y-2">
+            <a href="/" class="nav-link block text-center">HOME</a>
+            <a href="/#recruitment-section" class="nav-link block text-center">掲示板 (募集一覧)</a>
+            <a href="/hp/toiawase.html" class="nav-link block text-center bg-red-500 hover:bg-red-600">問い合わせ</a>
+        </div>
+    </header>
+
+    <!-- 2. メインコンテンツ -->
+    <main class="max-w-2xl mx-auto p-4 md:p-8">
+        <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-6">お問い合わせ</h2>
+            <p class="text-gray-600 text-center mb-8">ご不明な点やご要望がございましたら、お気軽にお問い合わせください。</p>
+
+            <form id="inquiryForm" class="space-y-6">
+                <div class="form-group">
+                    <label for="municipality_name">市区町村の役場などの名前 <span class="text-red-500">*</span></label>
+                    <input type="text" id="municipality_name" name="municipality_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="contact_person_name">担当者の名前 <span class="text-red-500">*</span></label>
+                    <input type="text" id="contact_person_name" name="contact_person_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="inquiry_content">お問い合わせ内容 <span class="text-red-500">*</span></label>
+                    <textarea id="inquiry_content" name="inquiry_content" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="reply_email">返答用メールアドレス <span class="text-red-500">*</span></label>
+                    <input type="email" id="reply_email" name="reply_email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone_number">電話番号</label>
+                    <input type="tel" id="phone_number" name="phone_number">
+                </div>
+                
+                <div class="text-center">
+                    <button type="submit" class="submit-button w-full md:w-auto">
+                        <i class="fas fa-paper-plane mr-2"></i> 確認画面へ
+                    </button>
+                </div>
+                <div id="formMessage" class="error-message hidden"></div>
+            </form>
+
+            <!-- 確認画面 -->
+            <div id="confirmationScreen" class="hidden bg-gray-50 p-6 rounded-lg shadow-inner space-y-4">
+                <h3 class="text-xl font-bold text-gray-800 text-center mb-4">入力内容の確認</h3>
+                <div class="space-y-2">
+                    <p><strong>市区町村の役場などの名前:</strong> <span id="confirm_municipality_name"></span></p>
+                    <p><strong>担当者の名前:</strong> <span id="confirm_contact_person_name"></span></p>
+                    <p><strong>お問い合わせ内容:</strong> <span id="confirm_inquiry_content"></span></p>
+                    <p><strong>返答用メールアドレス:</strong> <span id="confirm_reply_email"></span></p>
+                    <p><strong>電話番号:</strong> <span id="confirm_phone_number"></span></p>
+                </div>
+                <div class="flex justify-center space-x-4 mt-6">
+                    <button id="editButton" type="button" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <i class="fas fa-edit mr-2"></i> 編集する
+                    </button>
+                    <button id="sendButton" type="button" class="submit-button px-6 py-2">
+                        <i class="fas fa-check-circle mr-2"></i> 送信する
+                    </button>
+                </div>
+            </div>
+
+            <!-- 送信完了画面 -->
+            <div id="successScreen" class="hidden text-center p-8 bg-green-50 rounded-lg shadow-inner">
+                <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
+                <h3 class="text-2xl font-bold text-green-800 mb-3">お問い合わせを送信しました。</h3>
+                <p class="text-gray-700 mb-6">内容を確認後、担当者よりご連絡させていただきます。</p>
+                <a href="/" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-home mr-2"></i> トップページへ戻る
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- 5. フッター -->
+    <footer class="mt-12 py-6 bg-gray-800 text-white text-center">
+        <div class="mb-2">
+            <a href="/hp/dounyu_moushikomi.html" class="text-gray-300 hover:text-white transition duration-200">
+                <i class="fas fa-file-alt mr-1"></i> 導入申し込み
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> 地域課題解決プラットフォーム. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentYear = new Date().getFullYear();
+            document.getElementById('current-year').textContent = currentYear;
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            const inquiryForm = document.getElementById('inquiryForm');
+            const confirmationScreen = document.getElementById('confirmationScreen');
+            const successScreen = document.getElementById('successScreen');
+            const formMessage = document.getElementById('formMessage');
+            const editButton = document.getElementById('editButton');
+            const sendButton = document.getElementById('sendButton');
+
+            let formDataGlobal = {}; // フォームデータを一時的に保持
+
+            // フォームの表示状態を管理する関数
+            function showForm() {
+                inquiryForm.classList.remove('hidden');
+                confirmationScreen.classList.add('hidden');
+                successScreen.classList.add('hidden');
+                formMessage.classList.add('hidden');
+            }
+
+            // 確認画面の表示状態を管理する関数
+            function showConfirmation(data) {
+                inquiryForm.classList.add('hidden');
+                confirmationScreen.classList.remove('hidden');
+                successScreen.classList.add('hidden');
+                formMessage.classList.add('hidden');
+
+                document.getElementById('confirm_municipality_name').textContent = data.municipality_name;
+                document.getElementById('confirm_contact_person_name').textContent = data.contact_person_name;
+                document.getElementById('confirm_inquiry_content').textContent = data.inquiry_content;
+                document.getElementById('confirm_reply_email').textContent = data.reply_email;
+                document.getElementById('confirm_phone_number').textContent = data.phone_number || '未入力';
+            }
+
+            // 送信完了画面の表示状態を管理する関数
+            function showSuccess() {
+                inquiryForm.classList.add('hidden');
+                confirmationScreen.classList.add('hidden');
+                successScreen.classList.remove('hidden');
+                formMessage.classList.add('hidden');
+            }
+
+            // 初期表示
+            showForm();
+
+            inquiryForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                formMessage.classList.add('hidden');
+                formMessage.classList.remove('text-red-500', 'text-green-500');
+
+                const formData = new FormData(inquiryForm);
+                const data = Object.fromEntries(formData.entries());
+
+                // Basic validation
+                if (!data.municipality_name || !data.contact_person_name || !data.inquiry_content || !data.reply_email) {
+                    formMessage.textContent = '必須項目をすべて入力してください。';
+                    formMessage.classList.remove('hidden');
+                    formMessage.classList.add('text-red-500');
+                    return;
+                }
+
+                formDataGlobal = data; // データを一時保存
+                showConfirmation(data); // 確認画面を表示
+            });
+
+            editButton.addEventListener('click', () => {
+                showForm(); // フォームに戻る
+            });
+
+            sendButton.addEventListener('click', async () => {
+                // 送信処理
+                try {
+                    const response = await fetch('/api/send_inquiry', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formDataGlobal),
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        showSuccess(); // 成功画面を表示
+                        inquiryForm.reset(); // フォームをリセット
+                    } else {
+                        formMessage.textContent = result.error || 'お問い合わせの送信に失敗しました。';
+                        formMessage.classList.remove('hidden');
+                        formMessage.classList.add('text-red-500');
+                        showForm(); // エラー時はフォームに戻す
+                    }
+                } catch (error) {
+                    console.error('Error sending inquiry:', error);
+                    formMessage.textContent = 'ネットワークエラーが発生しました。後でもう一度お試しください。';
+                    formMessage.classList.remove('hidden');
+                    formMessage.classList.add('text-red-500');
+                    showForm(); // エラー時はフォームに戻す
+                }
+            });
+        });
+    </script>
+</body>
+</html>

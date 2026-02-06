@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー招待 - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .form-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .input-field {
+            border: 1px solid #d1d5db;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            border-color: #4f46e5;
+            outline: none;
+            box-shadow: 0 0 0 1px #4f46e5;
+        }
+        .required-label:after { 
+            content: " *";
+            color: #ef4444;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        .step.active {
+            color: #1e3a8a;
+        }
+        .step-circle {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+            background-color: #e5e7eb;
+            color: #1f2937;
+        }
+        .step.active .step-circle {
+            background-color: #1e3a8a;
+            color: white;
+        }
+        .step-line {
+            height: 2px;
+            width: 3rem;
+            background-color: #e5e7eb;
+            margin: 0 0.5rem;
+        }
+        .step.active + .step-line,
+        .step.completed + .step-line {
+            background-color: #1e3a8a;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="max-w-xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">新規ユーザー招待</h1>
+            <a href="/staff/re/management" class="text-white hover:text-gray-300 transition duration-200">
+                <i class="fas fa-arrow-left mr-1"></i> 管理メニューへ戻る
+            </a>
+        </div>
+    </header>
+
+    <main class="py-12 px-4">
+        <div class="max-w-xl mx-auto">
+            <div class="step-indicator">
+                <div class="step active">
+                    <div class="step-circle">1</div>
+                    入力
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">2</div>
+                    確認
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">3</div>
+                    完了
+                </div>
+            </div>
+
+            <div class="form-card p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">ボランティア情報</h2>
+                <form id="inviteForm">
+                    <fieldset class="border border-gray-300 p-4 rounded-lg mb-6">
+                        <legend class="text-lg font-semibold text-gray-700 px-2">1. ログイン情報</legend>
+                        <div class="mb-4">
+                            <label for="username" class="block text-sm font-medium text-gray-700 required-label">ユーザー名 (ログインID)</label>
+                            <input type="text" id="username" name="username" class="input-field mt-1" placeholder="例: tanaka.y" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="block text-sm font-medium text-gray-700 required-label">パスワード (初期パスワード)</label>
+                            <input type="password" id="password" name="password" class="input-field mt-1" placeholder="初期パスワードを設定してください" required>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="border border-gray-300 p-4 rounded-lg mb-6">
+                        <legend class="text-lg font-semibold text-gray-700 px-2">2. 基本情報</legend>
+                        <div class="mb-4">
+                            <label for="full_name" class="block text-sm font-medium text-gray-700 required-label">氏名</label>
+                            <input type="text" id="full_name" name="full_name" class="input-field mt-1" placeholder="例: 田中 雄一" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="mynumber" class="block text-sm font-medium text-gray-700 required-label">マイナンバー</label>
+                            <input type="text" id="mynumber" name="mynumber" class="input-field mt-1" placeholder="例: 123456789012 (ハイフンなし)" maxlength="12" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="email" class="block text-sm font-medium text-gray-700 required-label">メールアドレス</label>
+                            <input type="email" id="email" name="email" class="input-field mt-1" placeholder="例: example@mail.com" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="phone_number" class="block text-sm font-medium text-gray-700">電話番号</label>
+                            <input type="tel" id="phone_number" name="phone_number" class="input-field mt-1" placeholder="例: 09012345678 (ハイフンなし)">
+                        </div>
+                    </fieldset>
+                    
+                    <fieldset class="border border-red-500 p-4 rounded-lg mb-6 bg-red-50">
+                        <legend class="text-lg font-semibold text-red-700 px-2">3. 本人確認と操作環境確認</legend>
+                        <div class="mb-4">
+                            <p class="text-sm font-medium text-red-700 mb-2">
+                                【ご本人確認】この操作は、**招待されるご本人の前で**、市町村区の指定PCから行ってください。
+                            </p>
+                            <div class="flex items-center">
+                                <input type="checkbox" id="consent" name="consent" class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" required>
+                                <label for="consent" class="ml-2 block text-sm text-gray-900 required-label">
+                                    上記の本人確認と、市町村区の指定PCでの操作であることを確認しました。
+                                </label>
+                            </div>
+                        </div>
+                    </fieldset>
+
+
+                    <div class="mt-8">
+                        <button type="submit" class="w-full bg-amber-500 text-white py-3 rounded-lg font-semibold text-lg hover:bg-amber-600 transition duration-300 shadow-md">
+                            <i class="fas fa-arrow-right mr-2"></i>確認画面へ進む
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('inviteForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // フォームデータを取得
+            const formData = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                full_name: document.getElementById('full_name').value,
+                mynumber: document.getElementById('mynumber').value,
+                email: document.getElementById('email').value,
+                phone_number: document.getElementById('phone_number').value,
+            };
+
+            // ここでデータをセッションストレージに保存し、確認画面へ遷移させる
+            sessionStorage.setItem('tempInviteData', JSON.stringify(formData));
+
+            // 確認画面へリダイレクト
+            // 修正: /user_invite_confirm.html -> /staff/re/user_invite_confirm
+            window.location.href = '/staff/user/user_invite_confirm';
+        });
+
+        // 必須ラベルにアスタリスクを追加するCSSシミュレーション
+        const style = document.createElement('style');
+        style.innerHTML = '.required-label:after { content: " *"; color: #ef4444; }';
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

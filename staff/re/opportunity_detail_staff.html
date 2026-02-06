@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件詳細 - 職員メニュー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .main-header { background-color: #1e3a8a; color: white; padding: 1rem 1.5rem; }
+        .detail-card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .detail-header { padding: 1.5rem; border-bottom: 1px solid #e5e7eb; }
+        .detail-body { padding: 1.5rem; }
+        .detail-item { margin-bottom: 1rem; }
+        .detail-label { font-weight: 600; color: #4b5563; display: block; margin-bottom: 0.25rem; }
+        .detail-value { color: #1f2937; }
+    </style>
+</head>
+<body>
+
+    <header class="main-header shadow-lg">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-file-alt mr-3"></i>案件詳細
+            </h1>
+            <a href="/staff/recruitment/list" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-blue-600 hover:bg-blue-700">
+                <i class="fas fa-list mr-2"></i>案件一覧へ戻る
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 md:p-8">
+        <div id="loading" class="text-center text-gray-500">
+            <i class="fas fa-spinner fa-spin mr-2"></i>データを読み込み中...
+        </div>
+
+        <div id="detailContent" class="detail-card hidden">
+            <div class="detail-header">
+                <h2 id="title" class="text-3xl font-extrabold text-gray-900"></h2>
+            </div>
+            <div class="detail-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="detail-item">
+                        <span class="detail-label">ステータス</span>
+                        <span id="status" class="detail-value"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">募集ID</span>
+                        <span id="recruitmentId" class="detail-value"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">活動日</span>
+                        <span id="activity_date" class="detail-value"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">募集締切日</span>
+                        <span id="deadline" class="detail-value"></span>
+                    </div>
+                    <div class="detail-item md:col-span-2">
+                        <span class="detail-label">カテゴリー</span>
+                        <div id="categories" class="flex flex-wrap gap-2 mt-1"></div>
+                    </div>
+                    <div class="detail-item md:col-span-2">
+                        <span class="detail-label">募集内容詳細</span>
+                        <p id="description" class="detail-value whitespace-pre-wrap"></p>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">問い合わせ先メールアドレス</span>
+                        <span id="email" class="detail-value"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">問い合わせ先電話番号</span>
+                        <span id="phone_number" class="detail-value"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const recruitmentId = {{ recruitment_id }};
+            fetchOpportunityDetails(recruitmentId);
+        });
+
+        async function fetchOpportunityDetails(id) {
+            const API_ENDPOINT = `/staff/api/opportunities/${id}`;
+            const loadingEl = document.getElementById('loading');
+            const contentEl = document.getElementById('detailContent');
+
+            try {
+                const response = await fetch(API_ENDPOINT);
+                if (!response.ok) {
+                    throw new Error('案件データの取得に失敗しました。');
+                }
+                const data = await response.json();
+                const opportunity = data.opportunity;
+                const allCategories = data.all_categories;
+
+                // Populate the details
+                document.getElementById('title').textContent = opportunity.title;
+                document.getElementById('recruitmentId').textContent = opportunity.id;
+                document.getElementById('activity_date').textContent = new Date(opportunity.activity_date).toLocaleDateString('ja-JP');
+                document.getElementById('deadline').textContent = new Date(opportunity.deadline).toLocaleDateString('ja-JP');
+                document.getElementById('description').textContent = opportunity.description;
+                document.getElementById('email').textContent = opportunity.email;
+                document.getElementById('phone_number').textContent = opportunity.phone_number || '未設定';
+
+                // Status badge
+                const statusEl = document.getElementById('status');
+                let statusText = opportunity.status;
+                let statusColor = 'bg-gray-100 text-gray-800';
+                if (opportunity.status === 'Open' || opportunity.status === 'published') {
+                    statusText = '公開中';
+                    statusColor = 'bg-green-100 text-green-800';
+                } else if (opportunity.status === 'Draft' || opportunity.status === 'draft') {
+                    statusText = '下書き';
+                    statusColor = 'bg-yellow-100 text-yellow-800';
+                } else if (opportunity.status === 'Closed' || opportunity.status === 'closed') {
+                    statusText = '募集終了';
+                    statusColor = 'bg-red-100 text-red-800';
+                }
+                statusEl.innerHTML = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${statusText}</span>`;
+
+                // Categories
+                const categoriesEl = document.getElementById('categories');
+                const selectedCategoryIds = new Set(opportunity.categories);
+                const selectedCategories = allCategories.filter(cat => selectedCategoryIds.has(cat.category_id));
+                if (selectedCategories.length > 0) {
+                    selectedCategories.forEach(cat => {
+                        const catEl = document.createElement('span');
+                        catEl.className = 'px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full';
+                        catEl.textContent = cat.category_name;
+                        categoriesEl.appendChild(catEl);
+                    });
+                } else {
+                    categoriesEl.textContent = 'カテゴリー未設定';
+                }
+
+                loadingEl.classList.add('hidden');
+                contentEl.classList.remove('hidden');
+
+            } catch (error) {
+                loadingEl.textContent = 'エラー: ' + error.message;
+                loadingEl.classList.add('text-red-600');
+            }
+        }
+    </script>
+</body>
+</html>

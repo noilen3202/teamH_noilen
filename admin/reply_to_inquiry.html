@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>導入申請メール返信 - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .form-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .input-field {
+            border: 1px solid #d1d5db;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            border-color: #4f46e5;
+            outline: none;
+            box-shadow: 0 0 0 1px #4f46e5;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-gray-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-reply mr-3"></i>導入申請メール返信
+            </h1>
+            <a href="{{ url_for('admin_dashboard') }}" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-blue-600 hover:bg-blue-700">
+                <i class="fas fa-arrow-left mr-2"></i>ダッシュボードへ戻る
+            </a>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow w-full p-4 md:p-8">
+        <div class="form-card p-6 md:p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">返信メール作成</h2>
+            
+            <form id="replyForm" class="space-y-6">
+                <div>
+                    <label for="recipient" class="block text-sm font-medium text-gray-700">宛先メールアドレス</label>
+                    <input type="email" id="recipient" class="input-field mt-1" placeholder="例: applicant@example.com" required>
+                </div>
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700">件名</label>
+                    <input type="text" id="subject" class="input-field mt-1" placeholder="例: 導入申請について" required>
+                </div>
+                <div>
+                    <label for="body" class="block text-sm font-medium text-gray-700">本文</label>
+                    <textarea id="body" rows="12" class="input-field mt-1" placeholder="返信内容を入力してください"></textarea>
+                </div>
+                <div class="mt-6">
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-blue-700 transition duration-300 shadow-md">
+                        <i class="fas fa-paper-plane mr-2"></i>メールクライアントで開く
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>admin専用インターフェース</p>
+    </footer>
+
+    <script>
+        document.getElementById('replyForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const recipient = document.getElementById('recipient').value;
+            const subject = encodeURIComponent(document.getElementById('subject').value);
+            const body = encodeURIComponent(document.getElementById('body').value);
+
+            const mailtoLink = `mailto:${recipient}?subject=${subject}&body=${body}`;
+            window.location.href = mailtoLink;
+        });
+    </script>
+</body>
+</html>

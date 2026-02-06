@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー編集（職員用） - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .form-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .input-field, .textarea-field, .select-field {
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus, .textarea-field:focus, .select-field:focus {
+            border-color: #2563eb;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">ユーザー情報編集</h1>
+            <a href="/staff/re/user_list" class="text-white hover:text-gray-300 transition duration-200">
+                <i class="fas fa-arrow-left mr-1"></i> ユーザー一覧へ戻る
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto py-8 px-4">
+        <div id="loadingIndicator" class="text-center text-gray-500 hidden">
+            <i class="fas fa-spinner fa-spin mr-2"></i>ユーザー情報を読み込み中...
+        </div>
+
+        <div id="formContainer" class="form-card p-6 md:p-8 hidden">
+            <div class="mb-6 pb-4 border-b">
+                <h2 id="userNameHeader" class="text-2xl font-semibold text-gray-800"></h2>
+                <p class="text-sm text-gray-500 mt-1">ID: <span id="userIdDisplay"></span> | 権限: <span id="userRoleDisplay"></span></p>
+            </div>
+            
+            <form id="userEditForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">ログインユーザー名 (Username)</label>
+                        <input type="text" id="username" name="username" class="input-field" disabled>
+                    </div>
+                    <div>
+                        <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">氏名/表示名</label>
+                        <input type="text" id="fullName" name="fullName" class="input-field" placeholder="ボランティアの氏名または職員の役職">
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                        <input type="email" id="email" name="email" class="input-field" placeholder="メールアドレス（ボランティアのみ）">
+                    </div>
+                    <div>
+                        <label for="phoneNumber" class="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
+                        <input type="tel" id="phoneNumber" name="phoneNumber" class="input-field" placeholder="電話番号（ボランティアのみ）">
+                    </div>
+                    <div id="birthYearField" class="hidden">
+                        <label for="birthYear" class="block text-sm font-medium text-gray-700 mb-1">生年</label>
+                        <input type="number" id="birthYear" name="birthYear" class="input-field" min="1900" max="2100" placeholder="例: 1980">
+                    </div>
+                    <div id="genderField" class="hidden">
+                        <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">性別</label>
+                        <select id="gender" name="gender" class="select-field">
+                            <option value="Unspecified">未指定</option>
+                            <option value="Male">男性</option>
+                            <option value="Female">女性</option>
+                            <option value="Other">その他</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="addressSection" class="hidden">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-t pt-4">住所情報（ボランティアのみ）</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="postalCode" class="block text-sm font-medium text-gray-700 mb-1">郵便番号</label>
+                            <input type="text" id="postalCode" name="postalCode" class="input-field" placeholder="例: 123-4567">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="address" class="block text-sm font-medium text-gray-700 mb-1">住所</label>
+                            <textarea id="address" name="address" rows="2" class="textarea-field" placeholder="市区町村以降の住所"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="staffRoleSection" class="hidden">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-t pt-4">職員権限（職員のみ）</h3>
+                    <div class="mb-6">
+                        <label for="staffRole" class="block text-sm font-medium text-gray-700 mb-1">権限レベル</label>
+                        <select id="staffRole" name="staffRole" class="select-field">
+                            <option value="Staff">一般職員 (Staff)</option>
+                            <option value="OrgAdmin">組織管理者 (OrgAdmin)</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">組織管理者(OrgAdmin)は、ユーザー管理やシステム設定の全ての権限を持ちます。</p>
+                    </div>
+                </div>
+
+                <div class="border-t pt-6 mt-6 flex justify-between items-center">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition duration-200 shadow-md">
+                        変更を保存
+                    </button>
+                    <button type="button" id="deleteAccountButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200 shadow-md">
+                        アカウントを削除
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+    let currentUserId = null; // 現在編集中のユーザーID
+    let isStaff = false;
+    let userName = ''; // 削除確認用
+
+    // ----------------------------------------
+    // ユーザー情報のロード
+    // ----------------------------------------
+    async function loadUserData(userId) {
+        currentUserId = userId;
+        const loading = document.getElementById('loadingIndicator');
+        const formContainer = document.getElementById('formContainer');
+        loading.classList.remove('hidden');
+        formContainer.classList.add('hidden');
+
+        try {
+            const response = await fetch(`/api/user/${userId}`);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: '不明なエラー' }));
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const user = await response.json();
+            isStaff = user.is_org_staff;
+            userName = user.name || user.username;
+
+            // フォームにデータを設定
+            document.getElementById('userNameHeader').textContent = userName;
+            document.getElementById('userIdDisplay').textContent = user.id;
+            document.getElementById('userRoleDisplay').textContent = isStaff ? (user.role === 'OrgAdmin' ? '組織管理者' : '一般職員') : 'ボランティア';
+            
+            document.getElementById('username').value = user.username || '';
+            document.getElementById('fullName').value = user.full_name || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('phoneNumber').value = user.phone_number || '';
+            
+            // ボランティア/職員によるフィールドの表示切り替え
+            if (isStaff) {
+                // 職員の場合
+                document.getElementById('birthYearField').classList.add('hidden');
+                document.getElementById('genderField').classList.add('hidden');
+                document.getElementById('addressSection').classList.add('hidden');
+                document.getElementById('staffRoleSection').classList.remove('hidden');
+                document.getElementById('staffRole').value = user.role || 'Staff';
+
+                // 職員は氏名/表示名をroleで管理しているため、fullNameフィールドを無効化
+                document.getElementById('fullName').disabled = true;
+
+            } else {
+                // ボランティアの場合
+                document.getElementById('birthYearField').classList.remove('hidden');
+                document.getElementById('genderField').classList.remove('hidden');
+                document.getElementById('addressSection').classList.remove('hidden');
+                document.getElementById('staffRoleSection').classList.add('hidden');
+
+                document.getElementById('birthYear').value = user.birth_year || '';
+                document.getElementById('gender').value = user.gender || 'Unspecified';
+                document.getElementById('postalCode').value = user.postal_code || '';
+                document.getElementById('address').value = user.address || '';
+                
+                document.getElementById('fullName').disabled = false;
+            }
+
+            loading.classList.add('hidden');
+            formContainer.classList.remove('hidden');
+
+        } catch (error) {
+            console.error('ユーザー情報ロードエラー:', error);
+            alert('ユーザー情報の取得に失敗しました: ' + error.message);
+            // 失敗した場合も一覧画面に戻る
+            window.location.href = '/staff/re/user_list'; 
+        }
+    }
+
+    // ----------------------------------------
+    // ユーザー情報の保存 (実装)
+    // ----------------------------------------
+    async function saveUserData(event) {
+        event.preventDefault();
+
+        if (!currentUserId) {
+            alert('ユーザーIDが不明です。');
+            return;
+        }
+
+        // ... (データの収集ロジックは省略)
+        const formElement = document.getElementById('userEditForm');
+        const formData = new FormData(formElement);
+        const data = {
+            is_org_staff: isStaff,
+        };
+        
+        // データをJSONオブジェクトにまとめる
+        data.email = formData.get('email');
+        data.phoneNumber = formData.get('phoneNumber');
+
+        if (isStaff) {
+            data.staffRole = formData.get('staffRole');
+        } else {
+            data.fullName = formData.get('fullName');
+            data.birthYear = formData.get('birthYear') ? parseInt(formData.get('birthYear')) : null;
+            data.gender = formData.get('gender');
+            data.postalCode = formData.get('postalCode');
+            data.address = formData.get('address');
+        }
+        
+        // サーバーへPUTリクエストを送信
+        try {
+            const response = await fetch(`/api/user/${currentUserId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const responseData = await response.json();
+
+            if (response.ok) {
+                alert('ユーザー情報が正常に更新されました。');
+                
+                // 🚨 修正箇所: 更新成功後、ユーザー一覧画面に遷移します 🚨
+                window.location.href = '/staff/re/user_list'; 
+                
+            } else {
+                alert(`ユーザー情報の更新に失敗しました: ${responseData.error || '不明なエラー'}`);
+                console.error('Update failed:', responseData);
+            }
+
+        } catch (error) {
+            console.error('Fetch error:', error);
+            alert('サーバーとの通信に失敗しました。');
+        }
+    }
+    // ----------------------------------------
+    // ユーザーアカウントの削除
+    // ----------------------------------------
+    async function deleteUserAccount() {
+        if (!confirm(`ユーザー ${userName} のアカウントを完全に削除します。よろしいですか？この操作は元に戻せません。`)) {
+            return;
+        }
+        
+        try {
+            // DELETE APIの呼び出し（未実装を想定。サーバー側で別途DELETEエンドポイントが必要です）
+            const response = await fetch(`/api/user/${currentUserId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) { // DELETE成功時のステータスとレスポンスをチェック
+                alert(`ユーザー ${userName} のアカウントを正常に削除しました。`);
+                // 成功後、ユーザー一覧画面へ遷移
+                window.location.href = '/staff/re/user_list'; 
+            } else {
+                alert(`ユーザーアカウントの削除に失敗しました: ${data.error || data.message}`);
+            }
+        } catch (error) {
+            console.error('ユーザーアカウント削除エラー:', error);
+            alert('サーバーエラーにより、アカウントを削除できませんでした。');
+        }
+    }
+    // 🚨 ユーザー削除の処理ここまで 🚨
+
+    // ページロード時の初期処理
+    document.addEventListener('DOMContentLoaded', () => {
+        // URLパスからユーザーIDを抽出
+        const pathSegments = window.location.pathname.split('/');
+        const userId = pathSegments[pathSegments.length - 1]; // 例: /staff/re/user_edit/123 -> "123"
+        
+        if (userId && !isNaN(userId)) { // userIdが存在し、数値であることを確認
+            loadUserData(userId);
+        } else {
+            // 職員管理画面から遷移する際はID必須
+            alert('ユーザーIDが指定されていません。一覧画面に戻ります。');
+            window.location.href = '/staff/re/user_list'; 
+        }
+
+        // フォームと削除ボタンのイベントリスナー設定
+        document.getElementById('userEditForm').addEventListener('submit', saveUserData);
+        const deleteButton = document.getElementById('deleteAccountButton');
+        if (deleteButton) {
+            deleteButton.addEventListener('click', deleteUserAccount);
+        }
+    });
+</script>
+</body>
+</html>
