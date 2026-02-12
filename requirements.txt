@@ -1,0 +1,9 @@
+Flask
+psycopg2-binary
+python-dotenv
+google-cloud-language
+pandas
+Flask-Bcrypt
+Flask-Mail
+fpdf
+gunicorn

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>募集作成 - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .form-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .input-field, .textarea-field, .select-field {
+            border: 1px solid #d1d5db;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus, .textarea-field:focus, .select-field:focus {
+            border-color: #2563eb; /* Blue focus */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+            outline: none;
+        }
+        .required-label:after { 
+            content: " *"; 
+            color: #ef4444; 
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-bullhorn mr-2"></i>ボランティア募集作成 (DB登録項目のみ)
+            </h1>
+            <div class="flex items-center space-x-4">
+                <button id="bulkUploadBtn" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-sm">
+                    <i class="fas fa-file-csv mr-2"></i>CSVで一括登録
+                </button>
+                <a href="/staff/menu" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm">
+                    <i class="fas fa-arrow-left mr-2"></i>メニューへ戻る
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 md:p-8">
+
+        <div class="form-card p-6 md:p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">募集案件 新規登録フォーム</h2>
+            <p class="text-sm text-gray-500 mb-6">※ データベースに直接登録される必須項目のみを表示しています。</p>
+
+            <form id="opportunityForm">
+
+                <fieldset class="border border-gray-200 p-4 rounded-lg mb-6">
+                    <legend class="text-lg font-semibold text-gray-700 px-2">1. 案件基本情報</legend>
+
+                    <div class="mb-4">
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-2 required-label">募集タイトル</label>
+                        <input type="text" id="title" name="title" class="input-field" placeholder="Recruitments.title" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2 required-label">募集詳細</label>
+                        <textarea id="description" name="description" rows="6" class="textarea-field" placeholder="Recruitments.description" required></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">カテゴリー選択</label>
+                        <div id="category-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <p class="text-sm text-gray-500">カテゴリーを読み込み中...</p>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="border border-gray-200 p-4 rounded-lg mb-6">
+                    <legend class="text-lg font-semibold text-gray-700 px-2">2. 活動日時と募集期間</legend>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="activity_date" class="block text-sm font-medium text-gray-700 mb-2 required-label">活動開始日 (Recruitments.start_date)</label>
+                            <input type="date" id="activity_date" name="activity_date" class="input-field" required>
+                        </div>
+                        <div>
+                            <label for="deadline" class="block text-sm font-medium text-gray-700 mb-2 required-label">募集締切日 (Recruitments.end_date)</label>
+                            <input type="date" id="deadline" name="deadline" class="input-field" required>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <fieldset class="border border-gray-200 p-4 rounded-lg mb-6">
+                    <legend class="text-lg font-semibold text-gray-700 px-2">3. 連絡先・公開設定</legend>
+
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2 required-label">担当者連絡用メールアドレス (Recruitments.contact_email)</label>
+                        <input type="email" id="email" name="email" class="input-field" placeholder="ボランティアからの問い合わせが届くメールアドレス" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="phone_number" class="block text-sm font-medium text-gray-700 mb-2">担当者連絡用電話番号 (Recruitments.contact_phone_number)</label>
+                        <input type="tel" id="phone_number" name="phone_number" class="input-field" placeholder="例: 090-1234-5678 (任意)">
+                        <p class="text-xs text-gray-500 mt-1">公開される連絡先となります。</p>
+                    </div>
+
+                    <div class="mt-6">
+                        <label for="status" class="block text-sm font-medium text-gray-700 mb-2 required-label">公開ステータス (Recruitments.status)</label>
+                        <select id="status" name="status" class="select-field" required>
+                            <option value="draft">下書き (非公開)</option>
+                            <option value="published">公開 (ボランティアに即時表示)</option>
+                        </select>
+                    </div>
+                </fieldset>
+
+                <div class="mt-8 flex space-x-4">
+                    <button type="button" id="submitDraft" class="flex-1 bg-gray-500 text-white py-3 rounded-lg font-semibold text-lg hover:bg-gray-600 transition duration-300 shadow-lg">
+                        <i class="fas fa-save mr-2"></i>下書きとして保存
+                    </button>
+                    <button type="submit" id="submitPublish" class="flex-1 bg-blue-700 text-white py-3 rounded-lg font-semibold text-lg hover:bg-blue-800 transition duration-300 shadow-lg">
+                        <i class="fas fa-arrow-right mr-2"></i>公開して登録
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <div id="csvUploadModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="csvUploadForm">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <i class="fas fa-file-upload text-blue-600"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-xl leading-6 font-medium text-gray-900" id="modal-title">
+                                    CSVで募集情報を一括登録
+                                </h3>
+                                <div class="mt-4">
+                                    <p class="text-sm text-gray-600 mb-4">
+                                        指定されたフォーマットのCSVファイルを選択して、募集情報を一括で登録します。<a href="/csv/format_template.csv" download class="text-blue-600 hover:underline">フォーマットのダウンロードはこちら</a>
+                                    </p>
+                                    <input type="file" id="csvFile" name="file" accept=".csv" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                                <div class="mt-4">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="publishCheckbox" name="publish" value="true" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                        <span class="ml-2 text-sm text-gray-700">登録と同時に公開する</span>
+                                    </label>
+                                </div>
+                                <div id="uploadResult" class="mt-4 text-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" id="uploadBtn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            <i class="fas fa-upload mr-2"></i>アップロード
+                        </button>
+                        <button type="button" id="cancelUpload" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm">
+                            キャンセル
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('opportunityForm');
+        const categoryCheckboxesDiv = document.getElementById('category-checkboxes');
+        const submitDraftButton = document.getElementById('submitDraft');
+        
+        // ------------------------------------------------------------------
+        // カテゴリー一覧の取得と表示 
+        // ------------------------------------------------------------------
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/categories'); 
+                if (!response.ok) throw new Error('カテゴリーの読み込みに失敗しました');
+                const categories = await response.json();
+                
+                categoryCheckboxesDiv.innerHTML = ''; 
+
+                categories.forEach(category => {
+                    const checkboxContainer = document.createElement('div');
+                    checkboxContainer.className = 'flex items-center';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `category-${category.category_id}`;
+                    checkbox.name = 'categories';
+                    checkbox.value = category.category_id;
+                    checkbox.className = 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
+                    const label = document.createElement('label');
+                    label.htmlFor = `category-${category.category_id}`;
+                    label.className = 'ml-2 text-sm font-medium text-gray-700 cursor-pointer';
+                    label.textContent = category.category_name;
+
+                    checkboxContainer.appendChild(checkbox);
+                    checkboxContainer.appendChild(label);
+                    categoryCheckboxesDiv.appendChild(checkboxContainer);
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                categoryCheckboxesDiv.innerHTML = `<p class="text-sm text-red-500">カテゴリーの読み込み中にエラーが発生しました。</p>`;
+            }
+        }
+        
+        loadCategories();
+
+        // ------------------------------------------------------------------
+        // フォーム送信処理 (APIに送るデータを最小化)
+        // ------------------------------------------------------------------
+        async function submitOpportunity(status) {
+            const selectedCategories = Array.from(document.querySelectorAll('input[name="categories"]:checked')).map(cb => cb.value);
+
+            // DB登録項目と、server.pyのAPIが必須とする項目をformDataに含めます
+            const formData = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                categories: selectedCategories,
+                activity_date: document.getElementById('activity_date').value,
+                deadline: document.getElementById('deadline').value,
+                email: document.getElementById('email').value,
+                // 📞 ここで電話番号を取得
+                phone_number: document.getElementById('phone_number').value || null, // 値が空の場合はnullを送信
+                status: status,
+                
+                // server.pyのAPIが必須としているがフォームから削除した項目は仮の値で送信 (API側で処理される)
+                location: '未指定', 
+                required_count: 1, 
+                time_frame: null,
+                required_skills: null, 
+            };
+
+            // 必須フィールドの簡易チェック
+            if (!formData.title || !formData.description || !formData.activity_date || !formData.deadline || !formData.email) {
+                alert('募集タイトル、募集詳細、活動開始日、募集締切日、担当者メールアドレスは必須です。');
+                return;
+            }
+
+            try {
+                const response = await fetch('/staff/api/opportunities', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    window.location.href = '/staff/recruitment/list'; 
+                } else {
+                    alert(`登録に失敗しました: ${result.error || '不明なエラー'}`);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                alert('通信中にエラーが発生しました。');
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // イベントリスナー
+        // ------------------------------------------------------------------
+        // 「下書きとして保存」
+        submitDraftButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            submitOpportunity('draft');
+        });
+
+        // 「公開して登録」
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            submitOpportunity('published');
+        });
+
+        // --- CSV Modal Logic ---
+        const csvModal = document.getElementById('csvUploadModal');
+        const bulkUploadBtn = document.getElementById('bulkUploadBtn');
+        const cancelUploadBtn = document.getElementById('cancelUpload');
+        const csvUploadForm = document.getElementById('csvUploadForm');
+        const uploadResultDiv = document.getElementById('uploadResult');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        bulkUploadBtn.addEventListener('click', () => csvModal.classList.remove('hidden'));
+        cancelUploadBtn.addEventListener('click', () => {
+            csvModal.classList.add('hidden');
+            uploadResultDiv.innerHTML = '';
+            csvUploadForm.reset();
+        });
+
+        csvUploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(csvUploadForm);
+            
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>処理中...';
+            uploadResultDiv.innerHTML = `<p class="text-blue-600">アップロード処理を開始します...</p>`;
+
+
+            try {
+                const response = await fetch('/staff/opportunity/bulk_upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    uploadResultDiv.innerHTML = `<p class="text-green-600 font-bold">${result.message}</p>`;
+                    if (result.errors && result.errors.length > 0) {
+                        uploadResultDiv.innerHTML += '<p class="text-yellow-600 mt-2">以下のエラーが報告されました:</p><ul class="list-disc list-inside text-sm text-gray-600">' 
+                            + result.errors.map(err => `<li>${err}</li>`).join('') 
+                            + '</ul>';
+                    }
+                    // Redirect to the list page after a delay
+                    setTimeout(() => {
+                       window.location.href = '/staff/recruitment/list';
+                    }, 5000);
+                } else {
+                    throw new Error(result.error || '不明なエラーが発生しました。');
+                }
+            } catch (error) {
+                uploadResultDiv.innerHTML = `<p class="text-red-600 font-bold">アップロード失敗:</p><p class="text-red-500">${error.message}</p>`;
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>アップロード';
+            }
+        });
+        
+    </script>
+</body>
+</html>

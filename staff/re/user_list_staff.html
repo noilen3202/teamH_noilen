@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザーの一覧（職員用） - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .content-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .table-header {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .data-row:hover {
+            background-color: #fef3c7; /* Yellow hover effect for clarity */
+        }
+        .edit-button {
+            transition: background-color 0.2s;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">ユーザリスト（職員用）</h1>
+            <a href="/staff/menu" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm">
+                <i class="fas fa-arrow-left mr-2"></i>メニューへ戻る
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-8">
+        <h2 class="text-3xl font-extrabold text-gray-800 mb-6">登録ユーザーリスト</h2>
+        
+        <div class="content-card p-6 overflow-x-auto">
+            <div class="mb-6 flex space-x-4">
+                <input type="text" id="userSearch" placeholder="ユーザー名、ID、メールで検索" class="p-2 border border-gray-300 rounded-lg flex-grow focus:ring-amber-500 focus:border-amber-500">
+                <button id="searchButton" class="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition duration-200">
+                    <i class="fas fa-search mr-2"></i> 検索
+                </button>
+            </div>
+
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="table-header">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">氏名</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">ユーザー名</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">メールアドレス</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">ステータス</th>
+                        <th class="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="userListBody" class="bg-white divide-y divide-gray-200">
+                    <tr><td colspan="6" class="p-4 text-center text-gray-500">ユーザーデータを読み込み中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="mt-8 py-4 bg-gray-800 text-white text-center text-sm">
+        <p>職員専用インターフェース</p>
+    </footer>
+
+    <script>
+        let allUsers = []; // 全ユーザーを保持するグローバル変数
+
+        // ----------------------------------------
+        // データの取得
+        // ----------------------------------------
+        async function fetchUserList() {
+            const body = document.getElementById('userListBody');
+            body.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>データを読み込み中...</td></tr>';
+
+            try {
+                // 【修正済み】正しいAPIエンドポイントにアクセス
+                const response = await fetch('/api/staff/users'); 
+                
+                if (response.ok) { // HTTPステータスが200-299の場合（成功）
+                    const users = await response.json(); // ユーザーリストの配列を直接取得
+                    allUsers = users; // 全ユーザーデータを保存
+                    renderUserList(allUsers);
+                } else {
+                    // エラーレスポンスをJSONとしてパースを試みる（エラーメッセージを取得）
+                    const errorData = await response.json().catch(() => ({ error: '不明なエラー形式' }));
+                    // サーバーからのエラーメッセージ（.error）があれば表示、なければステータスコードを表示
+                    const errorMessage = errorData.error || `ステータスコード: ${response.status}`;
+                    body.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">データの取得に失敗しました: ${errorMessage}</td></tr>`;
+                }
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                body.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">サーバーとの通信に失敗しました。URLを確認してください。</td></tr>`;
+            }
+        }
+
+        // ----------------------------------------
+        // リストの描画
+        // ----------------------------------------
+        function renderUserList(users) {
+            const body = document.getElementById('userListBody');
+            body.innerHTML = '';
+            
+            if (users.length === 0) {
+                body.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">該当するボランティアはいません。</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                // 🚨 修正箇所: ここに statusClass の定義を追加します 🚨
+                const statusClass = user.status === 'active' ? 'bg-green-100 text-green-800' : 
+                                    user.status === 'inactive' ? 'bg-red-100 text-red-800' : 
+                                    'bg-yellow-100 text-yellow-800'; // statusに応じたCSSクラスを決定
+
+                const row = `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-6 py-3">${user.display_id || '-'}</td>
+                        <td class="px-6 py-3 font-medium text-gray-900">${user.name}</td>
+                        <td class="px-6 py-3 text-sm text-gray-500">${user.username}</td>
+                        <td class="px-6 py-3 text-sm text-gray-500">${user.email || '-'}</td>
+                        <td class="px-6 py-3">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                                ${user.status_text}
+                            </span>
+                        </td>
+                        <td class="px-6 py-3 text-right">
+                            <a href="/staff/re/user_edit/${user.display_id}" class="text-indigo-600 hover:text-indigo-900 font-medium">編集</a>
+                        </td>
+                    </tr>
+                `;
+                body.innerHTML += row;
+            });
+        }
+
+        // ----------------------------------------
+        // 検索処理
+        // ----------------------------------------
+        function handleSearch() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            
+            if (searchTerm === '') {
+                renderUserList(allUsers);
+                return;
+            }
+
+            const filteredUsers = allUsers.filter(user => 
+                user.name.toLowerCase().includes(searchTerm) || 
+                user.display_id.toString().includes(searchTerm) || // ID検索対応
+                user.email.toLowerCase().includes(searchTerm) ||
+                user.username.toLowerCase().includes(searchTerm)
+            );
+            renderUserList(filteredUsers);
+        }
+
+        // ----------------------------------------
+        // 初期ロードとイベントリスナー
+        // ----------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchUserList();
+            
+            // 検索フィールドとボタンにイベントリスナーを設定
+            document.getElementById('userSearch').addEventListener('input', handleSearch);
+            document.getElementById('searchButton').addEventListener('click', handleSearch);
+        });
+    </script>
+</body>
+</html>

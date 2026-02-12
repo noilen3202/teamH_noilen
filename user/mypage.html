@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイページ - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-blue-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-hands-helping mr-2"></i>地域支援 Hub
+            </h1>
+            <nav class="hidden md:flex items-center space-x-4">
+                <a href="/" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">ホーム</a>
+                <a href="/user/recruitmentlist" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">募集一覧</a>
+                <a href="/user/mypage" class="bg-blue-600 px-3 py-2 rounded-md text-sm font-medium">マイページ</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow container mx-auto flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            <div class="bg-white shadow-2xl rounded-2xl p-8 md:p-12 text-center">
+                <i class="fas fa-user-circle text-6xl text-blue-800 mb-4"></i>
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-2">マイページ</h2>
+                <p class="text-gray-600 mb-6">ユーザー情報を確認・編集できます。</p>
+                
+                <div id="display-info" class="space-y-4 text-left">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">お名前:</p>
+                        <p id="user-name" class="text-lg font-semibold text-gray-900">読み込み中...</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">メールアドレス:</p>
+                        <p id="user-email" class="text-lg font-semibold text-gray-900">読み込み中...</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">電話番号:</p>
+                        <p id="user-phone" class="text-lg font-semibold text-gray-900">読み込み中...</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">マイナンバー:</p>
+                        <p id="user-mynumber" class="text-lg font-semibold text-gray-900">読み込み中...</p>
+                    </div>
+                </div>
+
+                <!-- Edit Form (hidden by default) -->
+                <form id="edit-form" class="hidden mt-6 space-y-4 text-left">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700">メールアドレス</label>
+                        <input type="email" id="email" name="email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700">電話番号</label>
+                        <input type="tel" id="phone" name="phone" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="mynumber" class="block text-sm font-medium text-gray-700">マイナンバー</label>
+                        <input type="text" id="mynumber" name="mynumber" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" maxlength="12">
+                    </div>
+                    <hr class="my-4">
+                    <p class="text-gray-600 text-sm">パスワードを変更する場合のみ入力してください。</p>
+                    <div>
+                        <label for="new_password" class="block text-sm font-medium text-gray-700">新しいパスワード</label>
+                        <input type="password" id="new_password" name="new_password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="confirm_password" class="block text-sm font-medium text-gray-700">新しいパスワード（確認）</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                     <hr class="my-4">
+                    <div>
+                        <label for="current_password" class="block text-sm font-medium text-gray-700">現在のパスワード（変更を保存するため）</label>
+                        <input type="password" id="current_password" name="current_password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div id="form-message" class="text-red-500 text-sm"></div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" id="cancel-edit-button" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">キャンセル</button>
+                        <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">変更を保存</button>
+                    </div>
+                </form>
+
+                <!-- Categories of Interest Section -->
+                <div id="interests-section" class="mt-8 text-left">
+                    <hr class="mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">興味のあるカテゴリ</h3>
+                    <div id="category-checkboxes" class="space-y-2 h-48 overflow-y-auto border p-2 rounded-md">
+                        <!-- Checkboxes will be loaded here -->
+                        <p class="text-gray-500">カテゴリを読み込み中...</p>
+                    </div>
+                    <div id="interests-message" class="text-green-500 text-sm mt-2"></div>
+                    <div class="flex justify-end mt-4">
+                        <button id="save-interests-button" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            カテゴリを保存
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Favorite Organizations Section -->
+                <div id="favorites-section" class="mt-8 text-left">
+                    <hr class="mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">お気に入りの市区町村</h3>
+                    <div id="organization-checkboxes" class="space-y-2 h-48 overflow-y-auto border p-2 rounded-md">
+                        <p class="text-gray-500">市区町村を読み込み中...</p>
+                    </div>
+                    <div id="favorites-message" class="text-green-500 text-sm mt-2"></div>
+                    <div class="flex justify-end mt-4">
+                        <button id="save-favorites-button" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            お気に入りを保存
+                        </button>
+                    </div>
+                </div>
+
+                
+
+                <div id="action-buttons" class="mt-8 space-y-4">
+                    <button id="edit-profile-button" class="w-full inline-block py-3 px-4 border border-blue-600 rounded-full shadow-sm text-lg font-bold text-blue-600 bg-white hover:bg-blue-50">
+                        プロフィールを編集
+                    </button>
+                    <a href="/user/activity_history" class="w-full inline-block py-3 px-4 border border-gray-300 rounded-full shadow-sm text-lg font-bold text-gray-700 bg-white hover:bg-gray-50">
+                        活動履歴
+                    </a>
+                    <button id="logout-button" class="w-full py-3 px-4 border border-transparent rounded-full shadow-sm text-lg font-bold text-white bg-red-600 hover:bg-red-700">
+                        ログアウト
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>&copy; 2025 地域支援 Hub. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let currentUser = {};
+
+            const displayInfo = document.getElementById('display-info');
+            const editForm = document.getElementById('edit-form');
+            const actionButtons = document.getElementById('action-buttons');
+            const editProfileButton = document.getElementById('edit-profile-button');
+            const cancelEditButton = document.getElementById('cancel-edit-button');
+            const formMessage = document.getElementById('form-message');
+
+            // --- NEW: Interest-related elements ---
+            const categoryCheckboxesContainer = document.getElementById('category-checkboxes');
+            const saveInterestsButton = document.getElementById('save-interests-button');
+            const interestsMessage = document.getElementById('interests-message');
+
+            // --- NEW: Favorite-related elements ---
+            const organizationCheckboxesContainer = document.getElementById('organization-checkboxes');
+            const saveFavoritesButton = document.getElementById('save-favorites-button');
+            const favoritesMessage = document.getElementById('favorites-message');
+
+
+            function toggleEditMode(isEditing) {
+                displayInfo.classList.toggle('hidden', isEditing);
+                // Hide interests and favorites sections when editing profile
+                document.getElementById('interests-section').classList.toggle('hidden', isEditing);
+                document.getElementById('favorites-section').classList.toggle('hidden', isEditing);
+                actionButtons.classList.toggle('hidden', isEditing);
+                editForm.classList.toggle('hidden', !isEditing);
+            }
+
+            // Fetch user profile data
+            fetch('/api/current_user')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        window.location.href = '/user/login';
+                    } else {
+                        currentUser = data;
+                        document.getElementById('user-name').textContent = currentUser.name;
+                        document.getElementById('user-email').textContent = currentUser.email;
+                        document.getElementById('user-phone').textContent = currentUser.phone || '未登録';
+                        document.getElementById('user-mynumber').textContent = currentUser.mynumber || '未登録';
+                        
+                        document.getElementById('email').value = currentUser.email;
+                        document.getElementById('phone').value = currentUser.phone || '';
+                        document.getElementById('mynumber').value = currentUser.mynumber || '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user data:', error);
+                    window.location.href = '/user/login';
+                });
+            
+            // --- NEW: Function to load and display categories ---
+            function loadCategoriesAndInterests() {
+                Promise.all([
+                    fetch('/api/categories').then(res => res.json()),
+                    fetch('/api/user/interests').then(res => res.json())
+                ])
+                .then(([allCategories, userInterests]) => {
+                    categoryCheckboxesContainer.innerHTML = ''; // Clear loading message
+                    if (!allCategories || allCategories.length === 0) {
+                        categoryCheckboxesContainer.innerHTML = '<p class="text-gray-500">利用可能なカテゴリがありません。</p>';
+                        return;
+                    }
+
+                    const userInterestIds = new Set(userInterests);
+
+                    allCategories.forEach(category => {
+                        const div = document.createElement('div');
+                        div.className = 'form-check flex items-center';
+
+                        const input = document.createElement('input');
+                        input.type = 'checkbox';
+                        input.id = `category-${category.category_id}`;
+                        input.value = category.category_id;
+                        input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
+                        if (userInterestIds.has(category.category_id)) {
+                            input.checked = true;
+                        }
+
+                        const label = document.createElement('label');
+                        label.htmlFor = `category-${category.category_id}`;
+                        label.textContent = category.category_name;
+                        label.className = 'ml-2 block text-sm text-gray-900';
+
+                        div.appendChild(input);
+                        div.appendChild(label);
+                        categoryCheckboxesContainer.appendChild(div);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading categories:', error);
+                    categoryCheckboxesContainer.innerHTML = '<p class="text-red-500">カテゴリの読み込みに失敗しました。</p>';
+                });
+            }
+
+            // --- NEW: Load categories on page load ---
+            loadCategoriesAndInterests();
+
+            // --- NEW: Function to load and display organizations ---
+            function loadOrganizationsAndFavorites() {
+                Promise.all([
+                    fetch('/api/organizations').then(res => res.json()),
+                    fetch('/api/user/favorites').then(res => res.json())
+                ])
+                .then(([allOrganizations, userFavorites]) => {
+                    organizationCheckboxesContainer.innerHTML = ''; // Clear loading message
+                    if (!allOrganizations || allOrganizations.length === 0) {
+                        organizationCheckboxesContainer.innerHTML = '<p class="text-gray-500">利用可能な市区町村がありません。</p>';
+                        return;
+                    }
+
+                    const userFavoriteIds = new Set(userFavorites);
+
+                    allOrganizations.forEach(org => {
+                        const div = document.createElement('div');
+                        div.className = 'form-check flex items-center';
+
+                        const input = document.createElement('input');
+                        input.type = 'checkbox';
+                        input.id = `org-${org.organization_id}`;
+                        input.value = org.organization_id;
+                        input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
+                        if (userFavoriteIds.has(org.organization_id)) {
+                            input.checked = true;
+                        }
+
+                        const label = document.createElement('label');
+                        label.htmlFor = `org-${org.organization_id}`;
+                        label.textContent = org.name;
+                        label.className = 'ml-2 block text-sm text-gray-900';
+
+                        div.appendChild(input);
+                        div.appendChild(label);
+                        organizationCheckboxesContainer.appendChild(div);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading organizations:', error);
+                    organizationCheckboxesContainer.innerHTML = '<p class="text-red-500">市区町村の読み込みに失敗しました。</p>';
+                });
+            }
+
+            // --- NEW: Load organizations on page load ---
+            loadOrganizationsAndFavorites();
+
+            // --- NEW: Event listener for saving interests ---
+            saveInterestsButton.addEventListener('click', () => {
+                const selectedCheckboxes = document.querySelectorAll('#category-checkboxes input:checked');
+                const selectedIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+                
+                interestsMessage.textContent = '保存中...';
+                interestsMessage.className = 'text-blue-500 text-sm mt-2';
+
+
+                fetch('/api/user/interests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category_ids: selectedIds })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        interestsMessage.textContent = data.message;
+                        interestsMessage.className = 'text-green-500 text-sm mt-2';
+                    } else {
+                        interestsMessage.textContent = data.message || '保存に失敗しました。';
+                        interestsMessage.className = 'text-red-500 text-sm mt-2';
+                    }
+                })
+                .catch(error => {
+                    console.error('Save interests error:', error);
+                    interestsMessage.textContent = '保存中にエラーが発生しました。';
+                    interestsMessage.className = 'text-red-500 text-sm mt-2';
+                })
+                .finally(() => {
+                    setTimeout(() => { interestsMessage.textContent = ''; }, 3000);
+                });
+            });
+
+            // --- NEW: Event listener for saving favorites ---
+            saveFavoritesButton.addEventListener('click', () => {
+                const selectedCheckboxes = document.querySelectorAll('#organization-checkboxes input:checked');
+                const selectedIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+                
+                favoritesMessage.textContent = '保存中...';
+                favoritesMessage.className = 'text-blue-500 text-sm mt-2';
+
+                fetch('/api/user/favorites', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ organization_ids: selectedIds })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        favoritesMessage.textContent = data.message;
+                        favoritesMessage.className = 'text-green-500 text-sm mt-2';
+                    } else {
+                        favoritesMessage.textContent = data.message || '保存に失敗しました。';
+                        favoritesMessage.className = 'text-red-500 text-sm mt-2';
+                    }
+                })
+                .catch(error => {
+                    console.error('Save favorites error:', error);
+                    favoritesMessage.textContent = '保存中にエラーが発生しました。';
+                    favoritesMessage.className = 'text-red-500 text-sm mt-2';
+                })
+                .finally(() => {
+                    setTimeout(() => { favoritesMessage.textContent = ''; }, 3000);
+                });
+            });
+
+
+            editProfileButton.addEventListener('click', () => {
+                toggleEditMode(true);
+            });
+
+            cancelEditButton.addEventListener('click', () => {
+                toggleEditMode(false);
+                formMessage.textContent = '';
+                editForm.reset();
+                document.getElementById('email').value = currentUser.email;
+                document.getElementById('phone').value = currentUser.phone || '';
+            });
+
+            editForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                formMessage.textContent = '';
+
+                const newPassword = document.getElementById('new_password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
+                const currentPassword = document.getElementById('current_password').value;
+
+                if (newPassword && newPassword !== confirmPassword) {
+                    formMessage.textContent = '新しいパスワードが一致しません。';
+                    return;
+                }
+                if (!currentPassword) {
+                    formMessage.textContent = '変更を保存するには現在のパスワードが必要です。';
+                    return;
+                }
+
+                const formData = {
+                    email: document.getElementById('email').value,
+                    phone_number: document.getElementById('phone').value,
+                    mynumber: document.getElementById('mynumber').value,
+                    current_password: currentPassword,
+                    new_password: newPassword || null,
+                };
+
+                fetch('/api/user/update_profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('プロフィールが更新されました。');
+                        document.getElementById('user-email').textContent = formData.email;
+                        document.getElementById('user-phone').textContent = formData.phone_number || '未登録';
+                        document.getElementById('user-mynumber').textContent = formData.mynumber || '未登録';
+                        currentUser.email = formData.email;
+                        currentUser.phone = formData.phone_number;
+                        currentUser.mynumber = formData.mynumber;
+                        toggleEditMode(false);
+                        editForm.reset();
+                    } else {
+                        formMessage.textContent = data.message || '更新に失敗しました。';
+                    }
+                })
+                .catch(error => {
+                    console.error('Update error:', error);
+                    formMessage.textContent = '更新中にエラーが発生しました。';
+                });
+            });
+
+            document.getElementById('logout-button').addEventListener('click', function() {
+                fetch('/user/logout', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.href = '/user/login';
+                        } else {
+                            alert('ログアウトに失敗しました。');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Logout error:', error);
+                        alert('ログアウト中にエラーが発生しました。');
+                    });
+            });
+        });
+    </script>
+
+    
+
+</body>
+</html>

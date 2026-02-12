@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>募集の詳細 - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-blue-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold"><i class="fas fa-hands-helping mr-2"></i>地域支援 Hub</h1>
+            <nav class="hidden md:flex items-center space-x-4">
+                <a href="/" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">ホーム</a>
+                <a href="/user/recruitmentlist" class="bg-blue-600 px-3 py-2 rounded-md text-sm font-medium">募集一覧</a>
+                <a href="/user/mypage" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">マイページ</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow container mx-auto p-4 md:p-8">
+        <div id="recruitment-container" class="max-w-7xl mx-auto">
+            <!-- パンくずリスト -->
+            <nav class="text-sm mb-6" aria-label="Breadcrumb">
+                <ol class="list-none p-0 inline-flex space-x-2">
+                    <li class="flex items-center"><a href="/user/recruitmentlist" class="text-gray-500 hover:text-blue-700">募集一覧</a></li>
+                    <li class="flex items-center"><i class="fas fa-angle-right text-gray-400 mx-2"></i><span id="breadcrumb-title" class="text-gray-800 font-semibold">募集の詳細</span></li>
+                </ol>
+            </nav>
+
+            <div class="lg:grid lg:grid-cols-3 lg:gap-12">
+                <!-- 左側: 詳細説明 -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <span id="recruitment-category" class="text-blue-800 bg-blue-100 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"></span>
+                        <h2 id="recruitment-title" class="text-4xl font-extrabold text-gray-900 mt-4 mb-4"></h2>
+                        <p id="recruitment-description" class="text-gray-600 leading-relaxed"></p>
+                    </div>
+                </div>
+
+                <!-- 右側: 概要カード -->
+                <div class="mt-8 lg:mt-0">
+                    <div class="bg-white rounded-xl shadow-lg p-6 sticky top-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-5">募集概要</h3>
+                        <ul id="summary-list" class="space-y-4 text-gray-700 border-t border-b py-5">
+                            <li class="flex items-center">
+                                <i class="fas fa-calendar-alt text-gray-500 w-6 text-center mr-3"></i>
+                                <div id="recruitment-dates"></div>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-phone-alt text-gray-500 w-6 text-center mr-3"></i>
+                                <div id="recruitment-contact"></div>
+                            </li>
+                        </ul>
+                        <div class="mt-6 space-y-3">
+                             <button id="apply-button" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-700 transition duration-300">
+                                このボランティアに応募する
+                            </button>
+                            <button id="inquiry-button" class="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-full shadow-sm text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300">
+                                募集について問い合わせる
+                            </button>
+                            <button type="button" onclick="history.back()" class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-full shadow-sm text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-300 mt-2">
+                                戻る
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>&copy; 2025 地域支援 Hub. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const recruitmentId = params.get('id');
+
+            const container = document.getElementById('recruitment-container');
+            
+            if (!recruitmentId) {
+                container.innerHTML = '<p class="text-center text-red-500">エラー: 募集IDが指定されていません。</p>';
+                return;
+            }
+
+            fetch(`/api/recruitments/${recruitmentId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('募集情報の取得に失敗しました。');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    // データをHTML要素に反映
+                    document.getElementById('breadcrumb-title').textContent = data.title;
+                    document.getElementById('recruitment-category').textContent = data.category || '未分類';
+                    document.getElementById('recruitment-title').textContent = data.title;
+                    document.getElementById('recruitment-description').textContent = data.description;
+                    
+                    let dates = data.start_date;
+                    if (data.end_date) {
+                        dates += ` 〜 ${data.end_date}`;
+                    }
+                    document.getElementById('recruitment-dates').innerHTML = `<span class="font-semibold">活動日時:</span> ${dates}`;
+                    document.getElementById('recruitment-contact').innerHTML = `<span class="font-semibold">連絡先:</span> ${data.contact_phone_number || '記載なし'}`;
+
+                    // ボタンのリンクを更新
+                    const applyButton = document.getElementById('apply-button');
+                    applyButton.onclick = () => { window.location.href = `/user/apply?id=${data.recruitment_id}`; };
+                    
+                    const inquiryButton = document.getElementById('inquiry-button');
+                    inquiryButton.onclick = () => { window.location.href = `/user/applyquestion?id=${data.recruitment_id}`; };
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    container.innerHTML = `<p class="text-center text-red-500">${error.message}</p>`;
+                });
+        });
+    </script>
+
+</body>
+</html>

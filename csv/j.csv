@@ -1,0 +1,5 @@
+title,description,start_date,end_date,contact_email,contact_phone_number,categories
+タイトル,募集詳細,活動開始日,募集締切日,担当者メールアドレス,問合せ電話番号,カテゴリー
+タイトル,説明,2026-01-01,2026-01-02,@,08022222222,イベント運営
+カテゴリーが複数ある場合は
+,"高齢者支援,子供支援"

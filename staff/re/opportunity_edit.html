@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>募集編集 - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-header {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .form-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .label-style {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .input-style, .select-style {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .input-style:focus, .select-style:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            outline: none;
+        }
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 0.5rem 0;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <header class="main-header">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">案件編集</h1>
+            <a href="/staff/recruitment/list" class="text-white hover:text-indigo-200 transition duration-150">
+                <i class="fas fa-list mr-1"></i> 一覧へ戻る
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto my-8 px-4">
+        <div class="form-card">
+            <h2 class="text-3xl font-semibold text-gray-800 mb-6 border-b pb-3">案件ID: <span id="recruitment-id-display"></span></h2>
+
+            <form id="opportunity-form">
+                <!-- タイトル -->
+                <div class="mb-5">
+                    <label for="title" class="label-style">タイトル <span class="text-red-500">*</span></label>
+                    <input type="text" id="title" class="input-style" required maxlength="255">
+                </div>
+
+                <!-- ステータス -->
+                <div class="mb-5">
+                    <label for="status" class="label-style">ステータス</label>
+                    <select id="status" class="select-style">
+                        <option value="draft">下書き (Draft)</option>
+                        <option value="published">募集中 (Open)</option>
+                        <option value="closed">終了 (Closed)</option>
+                    </select>
+                </div>
+
+                <!-- 詳細 -->
+                <div class="mb-5">
+                    <label for="description" class="label-style">募集詳細 <span class="text-red-500">*</span></label>
+                    <textarea id="description" class="input-style h-32" required></textarea>
+                </div>
+                
+                <!-- 活動日 (start_date) -->
+                <div class="mb-5">
+                    <label for="activity_date" class="label-style">活動開始日 <span class="text-red-500">*</span></label>
+                    <input type="date" id="activity_date" class="input-style" required>
+                </div>
+
+                <!-- 募集締切日 (end_date) -->
+                <div class="mb-5">
+                    <label for="deadline" class="label-style">募集締切日 <span class="text-red-500">*</span></label>
+                    <input type="date" id="deadline" class="input-style" required>
+                </div>
+
+                <!-- 問い合わせ情報 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                    <div>
+                        <label for="email" class="label-style">問い合わせメールアドレス <span class="text-red-500">*</span></label>
+                        <input type="email" id="email" class="input-style" required maxlength="255">
+                    </div>
+                    <div>
+                        <label for="phone_number" class="label-style">問い合わせ電話番号</label>
+                        <input type="tel" id="phone_number" class="input-style" maxlength="20">
+                    </div>
+                </div>
+
+                <!-- カテゴリー選択 -->
+                <div class="mb-8">
+                    <label class="label-style">カテゴリー選択</label>
+                    <div id="category-checkboxes" class="checkbox-container border p-4 rounded-lg bg-gray-50">
+                        <!-- カテゴリーチェックボックスはJavaScriptで挿入されます -->
+                        <p class="text-gray-500 italic">カテゴリーを読み込み中...</p>
+                    </div>
+                </div>
+                
+                <!-- DBスキーマから削除されたフィールド (非表示にするか、表示する場合は必須チェックから除外) -->
+                <!-- 今回は必須チェックから除外し、サーバー側で暫定値を送るようにします -->
+                <input type="hidden" id="location" value="未指定">
+                <input type="hidden" id="required_count" value="1">
+                <input type="hidden" id="required_skills" value="特になし">
+
+                <div class="mt-8 pt-6 border-t flex justify-between">
+                    <button type="button" id="end-button" class="px-8 py-3 bg-amber-600 text-white font-semibold rounded-lg shadow-md hover:bg-amber-700 focus:outline-none focus:ring-4 focus:ring-amber-500 focus:ring-opacity-50 transition duration-150 ease-in-out">
+                        <i class="fas fa-flag-checkered mr-2"></i> 案件を終了する
+                    </button>
+                    <button type="submit" id="save-button" class="px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 transition duration-150 ease-in-out">
+                        <i class="fas fa-save mr-2"></i> 案件を更新する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // 案件IDの取得
+        const pathSegments = window.location.pathname.split('/');
+        // URLが /staff/recruitment/edit/9 の場合、末尾の '9' を取得
+        const currentRecruitmentId = pathSegments[pathSegments.length - 1];
+
+        document.getElementById('recruitment-id-display').textContent = currentRecruitmentId;
+        
+        const API_BASE_URL = '/staff/api/opportunities';
+
+        // Helper: カテゴリーチェックボックスをレンダリングする
+        function renderCategories(allCategories, selectedCategoryIds) {
+            const container = document.getElementById('category-checkboxes');
+            container.innerHTML = ''; // クリア
+
+            allCategories.forEach(cat => {
+                const isChecked = selectedCategoryIds.includes(cat.category_id);
+                const item = document.createElement('div');
+                item.className = 'checkbox-item';
+                item.innerHTML = `
+                    <input type="checkbox" id="cat_${cat.category_id}" name="categories" value="${cat.category_id}" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" ${isChecked ? 'checked' : ''}>
+                    <label for="cat_${cat.category_id}" class="ml-2 text-sm text-gray-700">${cat.category_name}</label>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // 案件データをAPIからロードし、フォームに設定する
+        async function loadOpportunityData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/${currentRecruitmentId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // API側で404などのエラーが返された場合
+                    alert(`データの読み込みに失敗しました: ${data.error}`);
+                    // window.location.href = '/staff/recruitment/list'; // 必要に応じてリダイレクト
+                    return;
+                }
+
+                const opportunity = data.opportunity;
+                const allCategories = data.all_categories;
+                
+                // フォームフィールドにデータを設定
+                document.getElementById('title').value = opportunity.title || '';
+                document.getElementById('description').value = opportunity.description || '';
+                
+                // データベースのstart_dateを活動日として使用
+                document.getElementById('activity_date').value = opportunity.activity_date || ''; 
+                // データベースのend_dateを締切日として使用 (deadlineというキー名で受け取っている)
+                document.getElementById('deadline').value = opportunity.deadline || ''; 
+                
+                document.getElementById('email').value = opportunity.email || '';
+                document.getElementById('phone_number').value = opportunity.phone_number || '';
+                
+                // ステータスを設定
+                const statusValue = opportunity.status.toLowerCase().replace('open', 'published'); // DB: Open -> HTML: published
+                document.getElementById('status').value = statusValue;
+                
+                // カテゴリーチェックボックスをレンダリング
+                renderCategories(allCategories, opportunity.categories || []);
+
+                // スキーマ変更により削除されたフィールドに暫定値をセット (サーバー側で代替値を使用するため)
+                // フォームにこれらの値がなくても、サーバーが処理します。
+                document.getElementById('location').value = opportunity.location || '未指定';
+                document.getElementById('required_count').value = opportunity.required_count || 1;
+                document.getElementById('required_skills').value = opportunity.required_skills || '特になし';
+
+
+            } catch (error) {
+                console.error('案件データの読み込み中にエラーが発生しました:', error);
+                alert('案件データの読み込み中に予期せぬエラーが発生しました。');
+            }
+        }
+
+        // ページロード時にデータ読み込みを実行
+        window.onload = loadOpportunityData;
+
+        // Helper function to gather form data
+        function getFormData() {
+            const selectedCategories = Array.from(document.querySelectorAll('#category-checkboxes input[type="checkbox"]:checked'))
+                                            .map(cb => parseInt(cb.value, 10));
+            return {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                location: document.getElementById('location').value, 
+                required_count: parseInt(document.getElementById('required_count').value, 10),
+                required_skills: document.getElementById('required_skills').value,
+                activity_date: document.getElementById('activity_date').value,
+                deadline: document.getElementById('deadline').value,
+                phone_number: document.getElementById('phone_number').value,
+                email: document.getElementById('email').value,
+                status: document.getElementById('status').value,
+                categories: selectedCategories
+            };
+        }
+
+        // 「案件を終了する」ボタンのイベントリスナー
+        document.getElementById('end-button').addEventListener('click', async function() {
+            if (!confirm(`案件ID: ${currentRecruitmentId} を終了します。ステータスが「終了 (Closed)」に更新されます。よろしいですか？`)) {
+                return; // キャンセルの場合
+            }
+
+            const formData = getFormData();
+            formData.status = 'closed'; // ステータスを 'closed' に強制設定
+
+            try {
+                // 既存の更新APIエンドポイントを利用
+                const response = await fetch(`/staff/api/opportunities/${currentRecruitmentId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('案件が正常に終了されました。');
+                    window.location.href = '/staff/recruitment/list';
+                } else {
+                    alert(`処理失敗: ${result.error || '不明なエラー'}`);
+                }
+            } catch (error) {
+                console.error('終了処理中にエラーが発生しました:', error);
+                alert('案件の終了処理中に予期せぬエラーが発生しました。');
+            }
+        });
+
+        // フォーム送信イベントリスナー（更新処理）
+        document.getElementById('opportunity-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const updatedFormData = getFormData();
+            
+            // 必須項目チェック
+            if (!updatedFormData.title || !updatedFormData.description || !updatedFormData.activity_date || !updatedFormData.deadline || !updatedFormData.email) {
+                alert("必須項目（タイトル、詳細、活動開始日、募集締切日、メールアドレス）をすべて入力してください。");
+                return;
+            }
+
+            try {
+                // APIにデータを送信して更新
+                const response = await fetch(`/staff/api/opportunities/${currentRecruitmentId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedFormData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // result.message が undefined の場合に備えてデフォルトメッセージを設定
+                    alert(result.message || '案件が正常に更新されました。');
+                    window.location.href = '/staff/recruitment/list'; 
+                } else {
+                    alert(`更新失敗: ${result.error || '不明なエラー'}`);
+                }
+            } catch (error) {
+                console.error('更新中にエラーが発生しました:', error);
+                alert('案件の更新中に予期せぬエラーが発生しました。');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>募集応募 - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .header-main {
+            background-color: #059669; /* Emerald 600 */
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .content-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-main">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-handshake-angle mr-3"></i>募集応募フォーム
+            </h1>
+            <a href="/" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-emerald-700 hover:bg-emerald-800">
+                <i class="fas fa-arrow-left mr-2"></i>募集一覧へ戻る
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 md:p-8">
+        <div class="content-card p-6 md:p-8">
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-4" id="opportunity-title">案件タイトルを読み込み中...</h2>
+            <p class="text-gray-500 mb-6 border-b pb-4">以下の情報を入力し、応募を完了してください。ご入力いただいた情報は、担当職員に共有されます。</p>
+
+            <form id="applyForm">
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    
+                    <div class="sm:col-span-2">
+                        <label for="applicantName" class="block text-sm font-medium text-gray-700">お名前（必須）</label>
+                        <input type="text" id="applicantName" name="applicantName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+
+                    <div>
+                        <label for="applicantEmail" class="block text-sm font-medium text-gray-700">メールアドレス（必須）</label>
+                        <input type="email" id="applicantEmail" name="applicantEmail" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+
+                    <div>
+                        <label for="applicantPhone" class="block text-sm font-medium text-gray-700">電話番号</label>
+                        <input type="tel" id="applicantPhone" name="applicantPhone" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="note" class="block text-sm font-medium text-gray-700">備考・アピールポイント</label>
+                        <textarea id="note" name="note" rows="5" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500" placeholder="参加可能な曜日、特技、この案件に興味を持った理由などを記入してください。"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold text-xl hover:bg-emerald-700 transition duration-300 shadow-lg shadow-emerald-400/50">
+                        <i class="fas fa-paper-plane mr-2"></i>応募を確定する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        let currentOpportunity = null;
+
+        const MOCK_OPPORTUNITIES = [
+            { id: 'op1', title: '地域の高齢者向けイベントスタッフ募集', date: '2024-12-05', location: '中央公民館', required_count: 5, status: 'published' },
+            { id: 'op2', title: '河川敷の清掃ボランティア募集', date: '2024-12-15', location: '多摩川河川敷', required_count: 10, status: 'published' },
+            // ... 他のモックデータ
+        ];
+
+        function loadOpportunityDetails(id) {
+            const opportunity = MOCK_OPPORTUNITIES.find(op => op.id === id);
+            
+            if (opportunity) {
+                currentOpportunity = opportunity;
+                document.getElementById('opportunity-title').textContent = opportunity.title;
+            } else {
+                alert('指定された案件が見つかりません。');
+                // 修正: Flaskルートにリダイレクト
+                window.location.href = '/'; 
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const opportunityId = urlParams.get('id');
+            
+            if (opportunityId) {
+                loadOpportunityDetails(opportunityId);
+            } else {
+                alert('案件IDが指定されていません。募集一覧へ戻ります。');
+                // 修正: Flaskルートにリダイレクト
+                window.location.href = '/'; 
+            }
+        });
+
+        document.getElementById('applyForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            if (!currentOpportunity) {
+                alert('応募処理中にエラーが発生しました。');
+                return;
+            }
+
+            // 応募データを取得
+            const applicationData = {
+                opportunityId: currentOpportunity.id,
+                applicantName: document.getElementById('applicantName').value,
+                applicantEmail: document.getElementById('applicantEmail').value,
+                applicantPhone: document.getElementById('applicantPhone').value,
+                note: document.getElementById('note').value,
+                applicationDate: new Date().toISOString().split('T')[0] // 応募日
+            };
+
+            // 実際はサーバー（Flask）で登録処理を行います。
+            // POSTリクエストを送信する処理を実装する必要があります。
+
+            // 応募完了メッセージを表示（モック）
+            alert(`「${currentOpportunity.title}」への応募が完了しました。担当職員からの連絡をお待ちください。（モック）`);
+            
+            // 完了後の遷移先（今回はホーム/募集一覧へ）
+            // 修正: Flaskルートにリダイレクト
+            window.location.href = '/'; 
+        });
+    </script>
+</body>
+</html>

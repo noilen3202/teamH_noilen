@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial="1.0">
+    <title>募集に関するお問い合わせ - 地域支援 Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-blue-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold"><i class="fas fa-hands-helping mr-2"></i>地域支援 Hub</h1>
+            <nav class="hidden md:flex items-center space-x-4">
+                <a href="/" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">ホーム</a>
+                <a href="/user/recruitmentlist" class="bg-blue-600 px-3 py-2 rounded-md text-sm font-medium">募集一覧</a>
+                <a href="/user/mypage" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">マイページ</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow container mx-auto p-4 md:p-8">
+        <div class="max-w-3xl mx-auto">
+            <!-- パンくずリスト -->
+            <nav class="text-sm mb-6" aria-label="Breadcrumb">
+                <ol id="breadcrumbs" class="list-none p-0 inline-flex space-x-2">
+                    <li class="flex items-center"><a href="/user/recruitmentlist" class="text-gray-500 hover:text-blue-700">募集一覧</a></li>
+                    <li class="flex items-center"><i class="fas fa-angle-right text-gray-400 mx-2"></i><a id="breadcrumb-details" href="#" class="text-gray-500 hover:text-blue-700">募集の詳細</a></li>
+                    <li class="flex items-center"><i class="fas fa-angle-right text-gray-400 mx-2"></i><span class="text-gray-800 font-semibold">お問い合わせ</span></li>
+                </ol>
+            </nav>
+
+            <div class="bg-white shadow-2xl rounded-2xl overflow-hidden">
+                <div class="p-8">
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl font-extrabold text-gray-900">募集に関するお問い合わせ</h2>
+                        <p class="text-gray-500 mt-2">不明な点があれば、お気軽に質問してください。</p>
+                    </div>
+
+                    <div id="message-area" class="hidden text-center p-4 mb-6 text-sm rounded-lg"></div>
+
+                    <!-- お問い合わせ先情報 -->
+                    <div class="mb-8 bg-gray-50 rounded-lg p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-3">お問い合わせ先の募集</h3>
+                        <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <div class="md:col-span-2">
+                                <dt class="font-semibold text-gray-600">募集名:</dt>
+                                <dd id="rec-title" class="text-gray-900">読み込み中...</dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <!-- フォーム -->
+                    <form id="inquiry-form" class="space-y-6">
+                        <input type="hidden" id="recruitment-id-hidden" name="recruitment_id">
+                        
+                        <!-- あなたの情報 -->
+                        <div>
+                            <h4 class="text-md font-semibold text-gray-800 mb-3">あなたの情報</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="inquirer-name">お名前</label>
+                                    <input type="text" id="inquirer-name" name="inquirer_name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="inquirer-email">メールアドレス</label>
+                                    <input type="email" id="inquirer-email" name="inquirer_email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700" for="inquirer-phone">電話番号</label>
+                                    <input type="tel" id="inquirer-phone" name="inquirer_phone" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 問い合わせ内容 -->
+                        <div>
+                            <label for="inquiry_text" class="block text-sm font-medium text-gray-700">お問い合わせ内容</label>
+                            <div class="mt-1">
+                                <textarea id="inquiry_text" name="inquiry_text" rows="6" required class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="具体的な質問内容をご記入ください..."></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex justify-end space-x-4">
+                            <button type="button" onclick="history.back()" class="py-2 px-6 border border-gray-300 rounded-full shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">戻る</button>
+                            <button type="submit" class="py-2 px-6 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900">募集者に送る</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>&copy; 2025 地域支援 Hub. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const recruitmentId = params.get('id');
+            
+            if (!recruitmentId) {
+                document.querySelector('main').innerHTML = '<p class="text-center text-red-500">エラー: 募集IDが指定されていません。</p>';
+                return;
+            }
+
+            // パンくずリストと隠しフィールドを設定
+            document.getElementById('breadcrumb-details').href = `/user/recruitmentapply?id=${recruitmentId}`;
+            document.getElementById('recruitment-id-hidden').value = recruitmentId;
+
+            // 募集情報を取得して表示
+            fetch(`/api/recruitments/${recruitmentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+                    document.getElementById('rec-title').textContent = data.title;
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    document.getElementById('inquiry-form').innerHTML = `<p class="text-center text-red-500">情報の取得中にエラーが発生しました: ${error.message}</p>`;
+                });
+            
+            // フォーム送信イベント
+            document.getElementById('inquiry-form').addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const form = event.target;
+                const recruitmentId = form.querySelector('#recruitment-id-hidden').value;
+                const inquiryText = form.querySelector('#inquiry_text').value;
+                
+                // 新しく追加された入力欄から値を取得
+                const inquirerName = form.querySelector('#inquirer-name').value;
+                const inquirerEmail = form.querySelector('#inquirer-email').value;
+                const inquirerPhone = form.querySelector('#inquirer-phone').value;
+
+                const messageDiv = document.getElementById('message-area');
+
+                try {
+                    const response = await fetch('/api/inquiries', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            recruitment_id: recruitmentId,
+                            inquiry_text: inquiryText,
+                            inquirer_name: inquirerName,    // 追加
+                            inquirer_email: inquirerEmail,  // 追加
+                            inquirer_phone: inquirerPhone   // 追加
+                        })
+                    });
+                    const result = await response.json();
+
+                    messageDiv.textContent = result.message;
+                    messageDiv.classList.remove('hidden');
+
+                    if (!response.ok) {
+                        throw new Error(result.message);
+                    } else {
+                        messageDiv.classList.remove('bg-red-100', 'text-red-700');
+                        messageDiv.classList.add('bg-green-100', 'text-green-700');
+                        form.reset(); // フォームをリセット
+                        form.querySelector('button[type="submit"]').disabled = true;
+                    }
+                } catch (error) {
+                    messageDiv.textContent = error.message || '送信中にエラーが発生しました。';
+                    messageDiv.classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                    messageDiv.classList.add('bg-red-100', 'text-red-700');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

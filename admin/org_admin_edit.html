@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者アカウント編集 - 地域支援 Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="bg-gray-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-desktop mr-3"></i>adminメニュー
+            </h1>
+            <a href="{{ url_for('admin_org_admin_management') }}" class="text-white hover:text-gray-300 transition duration-200 p-2 rounded-lg bg-blue-600 hover:bg-blue-700">
+                <i class="fas fa-arrow-left mr-2"></i>アカウント管理へ戻る
+            </a>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow container mx-auto flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl">
+             <!-- パンくずリスト -->
+            <nav class="text-sm mb-6" aria-label="Breadcrumb">
+                <ol class="list-none p-0 inline-flex space-x-2">
+                    <li class="flex items-center"><a href="{{ url_for('admin_dashboard') }}" class="text-gray-500 hover:text-blue-700">ダッシュボード</a></li>
+                    <li class="flex items-center"><i class="fas fa-angle-right text-gray-400 mx-2"></i><a href="{{ url_for('admin_org_admin_management') }}" class="text-gray-500 hover:text-blue-700">市町村管理者アカウント管理</a></li>
+                    <li class="flex items-center"><i class="fas fa-angle-right text-gray-400 mx-2"></i><span class="text-gray-800 font-semibold">アカウント編集</span></li>
+                </ol>
+            </nav>
+
+            <div class="bg-white shadow-2xl rounded-2xl overflow-hidden">
+                <div class="p-8">
+                    <div class="text-center mb-8">
+                        <i class="fas fa-user-edit text-5xl text-blue-800 mb-4"></i>
+                        <h2 class="text-3xl font-extrabold text-gray-900">アカウント編集</h2>
+                        <p class="text-gray-500 mt-2">「{{ user.username }}」の情報を編集します。</p>
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="{% if category == 'success' %}bg-green-100 border-green-400 text-green-700{% else %}bg-red-100 border-red-400 text-red-700{% endif %} border px-4 py-3 rounded relative mb-4" role="alert">
+                                    <span class="block sm:inline">{{ message }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form action="" method="POST" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="username" class="block text-sm font-medium text-gray-700">ユーザー名 (変更不可)</label>
+                                <input type="text" id="username" name="username" value="{{ user.username }}" readonly class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 focus:outline-none sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="org_id" class="block text-sm font-medium text-gray-700">所属市町村</label>
+                                <select id="org_id" name="org_id" required class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    {% for org in orgs %}
+                                    <option value="{{ org.organization_id }}" {% if org.organization_id == user.organization_id %}selected{% endif %}>{{ org.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="password" class="block text-sm font-medium text-gray-700">新しいパスワード (変更する場合のみ)</label>
+                                <input type="password" id="password" name="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="password_confirm" class="block text-sm font-medium text-gray-700">新しいパスワード（確認用）</label>
+                                <input type="password" id="password_confirm" name="password_confirm" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">権限</label>
+                            <div class="mt-2 flex space-x-6 bg-gray-50 p-4 rounded-md">
+                                <label class="flex items-center">
+                                    <input type="radio" name="role" value="Staff" {% if user.role == 'Staff' %}checked{% endif %} class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">Staff (一般職員)</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="role" value="OrgAdmin" {% if user.role == 'OrgAdmin' %}checked{% endif %} class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">OrgAdmin (管理者)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="pt-5 flex justify-end">
+                            <button type="submit" class="w-full md:w-auto flex justify-center py-3 px-8 border border-transparent rounded-full shadow-sm text-lg font-bold text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-700 transition duration-300">
+                                更新する
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white text-center text-sm py-4 mt-auto">
+        <p>admin専用インターフェース</p>
+    </footer>
+
+</body>
+</html>
